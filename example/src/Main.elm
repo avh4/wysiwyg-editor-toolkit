@@ -104,7 +104,10 @@ view model =
                     [ Html.button [ onClick (SetRenderingMode Static) ] [ Html.text "Static" ]
                     ]
         , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
+        , Html.hr [] []
         , pricingSummaryView model.renderingMode model.editorData
+        , Html.hr [] []
+        , Html.code [] [ Html.text (Debug.toString model.editorData) ]
         ]
     }
 
