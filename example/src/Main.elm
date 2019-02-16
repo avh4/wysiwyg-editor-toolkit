@@ -21,8 +21,7 @@ view model =
     { title = "avh4/wysiwyg-editor-toolkit demo"
     , body =
         [ Html.h2 [] [ Html.text "avh4/wysiwyg-editor-toolkit demo" ]
-        , Html.node "link" [ href "bootstrap-4.3.1.min.css", rel "stylesheet", type_ "text/css" ] []
-        , Html.node "link" [ href "../bootstrap-4.3.1.min.css", rel "stylesheet", type_ "text/css" ] []
+        , Html.node "link" [ href "/bootstrap-4.3.1.min.css", rel "stylesheet", type_ "text/css" ] []
         , Html.node "style" [] [ Html.text ".pricing-header { max-width: 700px }" ]
         , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
         , pricingSummaryView model.editorData
