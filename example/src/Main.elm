@@ -53,8 +53,37 @@ applyEdit path text data =
         [ "intro" ] ->
             { data | intro = text }
 
+        maybeIndex :: rest ->
+            case String.toInt maybeIndex of
+                Just index ->
+                    { data
+                        | plans =
+                            List.indexedMap
+                                (\i plan ->
+                                    if index == i then
+                                        applyPlanEdit rest text plan
+
+                                    else
+                                        plan
+                                )
+                                data.plans
+                    }
+
+                Nothing ->
+                    data
+
         _ ->
             data
+
+
+applyPlanEdit : List String -> String -> PricingPlan -> PricingPlan
+applyPlanEdit path text plan =
+    case path of
+        [ "name" ] ->
+            { plan | name = text }
+
+        _ ->
+            plan
 
 
 view : Model -> Browser.Document Msg
@@ -170,15 +199,23 @@ pricingSummaryView renderingMode summary =
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.map viewPricingPlanCard
+                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode (String.fromInt i))
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : PricingPlan -> Html msg
-viewPricingPlanCard pricingPlan =
+viewPricingPlanCard : RenderingMode -> String -> PricingPlan -> Html Msg
+viewPricingPlanCard renderingMode parentPath pricingPlan =
     let
+        viewOrEditText path value =
+            case renderingMode of
+                Static ->
+                    Toolkit.viewTextStatic value
+
+                Editable ->
+                    Toolkit.viewTextEditable (Edit [ parentPath, path ]) value
+
         buttonClass =
             if pricingPlan.callToActionOutline then
                 "btn-outline-primary"
@@ -188,7 +225,7 @@ viewPricingPlanCard pricingPlan =
     in
     div [ class "card mb-4 shadow-sm" ]
         [ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ text pricingPlan.name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText "name" pricingPlan.name ]
             ]
         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
