@@ -27,7 +27,7 @@ initialModel =
 
 type Msg
     = SetRenderingMode RenderingMode
-    | Edit String String
+    | Edit (List String) String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -44,13 +44,13 @@ update msg model =
             )
 
 
-applyEdit : String -> String -> PricingSummary -> PricingSummary
+applyEdit : List String -> String -> PricingSummary -> PricingSummary
 applyEdit path text data =
     case path of
-        "title" ->
+        [ "title" ] ->
             { data | title = text }
 
-        "intro" ->
+        [ "intro" ] ->
             { data | intro = text }
 
         _ ->
@@ -163,9 +163,9 @@ pricingSummaryView renderingMode summary =
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ viewOrEditText "title" summary.title ]
+            [ h1 [ class "display-4" ] [ viewOrEditText [ "title" ] summary.title ]
             , p [ class "lead" ]
-                [ viewOrEditText "intro" summary.intro
+                [ viewOrEditText [ "intro" ] summary.intro
                 ]
             ]
         , div [ class "container" ]
