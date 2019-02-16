@@ -6,9 +6,9 @@
   "scripts": {
     "build": "elm make --docs=documentation.json",
     "test": "npm run-script build && npm run-script build-example && elm-format --validate .",
-    "build-example": "(cd example && elm make src/Main.elm)",
+    "build-example": "(cd example && elm make --output main.js src/Main.elm)",
     "watch": "chokidar --initial elm.json 'src/**/*.elm' 'tests/**/*.elm' 'example/**/*.elm' -c 'npm test'",
-    "watch-example": "(cd example && elm reactor --port=8081)"
+    "serve": "(cd example && http-server -p 8081 .)"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +17,7 @@
     "chokidar-cli": "^1.2.1",
     "elm": "^0.19.0-bugfix6",
     "elm-format": "^0.8.1",
-    "elm-test": "^0.19.0-rev4"
+    "elm-test": "^0.19.0-rev4",
+    "http-server": "^0.11.1"
   }
 }

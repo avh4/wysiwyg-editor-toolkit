@@ -11,7 +11,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 -}
 
 import Html exposing (Html)
-import Html.Attributes exposing (contenteditable)
+import Html.Attributes exposing (attribute)
 import Html.Events
 import Html.Keyed
 import Json.Decode
@@ -37,11 +37,12 @@ viewTextEditable msg text =
     Html.Keyed.node "span"
         []
         [ ( "editable"
-          , Html.span
-                [ contenteditable True
-                , onContentEdited msg
+          , Html.node "avh4-wysiwyg-editor-toolkit-text"
+                [ attribute "content" text
+                , Html.Events.on "content-changed" (Json.Decode.at [ "detail", "innerText" ] Json.Decode.string)
+                    |> Html.Attributes.map msg
                 ]
-                [ Html.text text ]
+                []
           )
         ]
 
