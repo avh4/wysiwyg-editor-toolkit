@@ -2,38 +2,80 @@ module Main exposing (main)
 
 import Browser
 import Html exposing (Html, a, button, div, h1, h4, h5, img, li, p, small, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, rel, src, type_)
+import Html.Attributes exposing (alt, attribute, class, href, rel, src, type_, value)
+import Html.Events exposing (onClick)
+import WysiwygEditorToolkit as Toolkit
 
 
 type alias Model =
     { editorData : PricingSummary
+    , renderingMode : RenderingMode
     }
+
+
+type RenderingMode
+    = Static
+    | Editable
 
 
 initialModel : Model
 initialModel =
     { editorData = pricingSummary
+    , renderingMode = Editable
     }
 
 
-view : Model -> Browser.Document msg
+type Msg
+    = SetRenderingMode RenderingMode
+    | Edit String
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        SetRenderingMode renderingMode ->
+            ( { model | renderingMode = renderingMode }
+            , Cmd.none
+            )
+
+        Edit text ->
+            let
+                ps =
+                    model.editorData
+            in
+            ( { model | editorData = { ps | intro = text } }
+            , Cmd.none
+            )
+
+
+view : Model -> Browser.Document Msg
 view model =
     { title = "avh4/wysiwyg-editor-toolkit demo"
     , body =
         [ Html.h2 [] [ Html.text "avh4/wysiwyg-editor-toolkit demo" ]
         , Html.node "link" [ href "/bootstrap-4.3.1.min.css", rel "stylesheet", type_ "text/css" ] []
         , Html.node "style" [] [ Html.text ".pricing-header { max-width: 700px }" ]
+        , case model.renderingMode of
+            Static ->
+                Html.div []
+                    [ Html.button [ onClick (SetRenderingMode Editable) ] [ Html.text "Editable" ]
+                    ]
+
+            Editable ->
+                Html.div []
+                    [ Html.button [ onClick (SetRenderingMode Static) ] [ Html.text "Static" ]
+                    ]
         , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
-        , pricingSummaryView model.editorData
+        , pricingSummaryView model.renderingMode model.editorData
         ]
     }
 
 
-main : Program () Model Never
+main : Program () Model Msg
 main =
     Browser.document
         { init = \() -> ( initialModel, Cmd.none )
-        , update = \_ model -> ( model, Cmd.none )
+        , update = update
         , subscriptions = \model -> Sub.none
         , view = view
         }
@@ -99,13 +141,19 @@ pricingSummary =
     }
 
 
-pricingSummaryView : PricingSummary -> Html msg
-pricingSummaryView summary =
+pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
+pricingSummaryView renderingMode summary =
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
             [ h1 [ class "display-4" ] [ text summary.title ]
             , p [ class "lead" ]
-                [ text summary.intro ]
+                [ case renderingMode of
+                    Static ->
+                        Toolkit.viewTextStatic summary.intro
+
+                    Editable ->
+                        Toolkit.viewTextEditable Edit summary.intro
+                ]
             ]
         , div [ class "container" ]
             [ summary.plans
