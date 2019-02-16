@@ -36,63 +36,83 @@ pricingView =
             ]
         , div [ class "container" ]
             [ div [ class "card-deck mb-3 text-center" ]
-                [ div [ class "card mb-4 shadow-sm" ]
-                    [ div [ class "card-header" ]
-                        [ h4 [ class "my-0 font-weight-normal" ] [ text "Free" ]
+                [ viewPricingPlanCard
+                    { name = "Free"
+                    , pricePerMonth = { usd = 0 }
+                    , features =
+                        [ "10 users included"
+                        , "2 GB of storage"
+                        , "Email support"
+                        , "Help center access"
                         ]
-                    , div [ class "card-body" ]
-                        [ h1 [ class "card-title pricing-card-title" ]
-                            [ text "$0 "
-                            , small [ class "text-muted" ] [ text "/ mo" ]
-                            ]
-                        , ul [ class "list-unstyled mt-3 mb-4" ]
-                            [ li [] [ text "10 users included" ]
-                            , li [] [ text "2 GB of storage" ]
-                            , li [] [ text "Email support" ]
-                            , li [] [ text "Help center access" ]
-                            ]
-                        , button [ class "btn btn-lg btn-block btn-outline-primary", type_ "button" ]
-                            [ text "Sign up for free" ]
+                    , callToAction = "Sign up for free"
+                    , callToActionOutline = True
+                    }
+                , viewPricingPlanCard
+                    { name = "Pro"
+                    , pricePerMonth = { usd = 15 }
+                    , features =
+                        [ "20 users included"
+                        , "10 GB of storage"
+                        , "Priority email support"
+                        , "Help center access"
                         ]
-                    ]
-                , div [ class "card mb-4 shadow-sm" ]
-                    [ div [ class "card-header" ]
-                        [ h4 [ class "my-0 font-weight-normal" ] [ text "Pro" ]
+                    , callToAction = "Get started"
+                    , callToActionOutline = False
+                    }
+                , viewPricingPlanCard
+                    { name = "Enterprise"
+                    , pricePerMonth = { usd = 29 }
+                    , features =
+                        [ "30 users included"
+                        , "15 GB of storage"
+                        , "Phone and email support"
+                        , "Help center access"
                         ]
-                    , div [ class "card-body" ]
-                        [ h1 [ class "card-title pricing-card-title" ]
-                            [ text "$15 "
-                            , small [ class "text-muted" ] [ text "/ mo" ]
-                            ]
-                        , ul [ class "list-unstyled mt-3 mb-4" ]
-                            [ li [] [ text "20 users included" ]
-                            , li [] [ text "10 GB of storage" ]
-                            , li [] [ text "Priority email support" ]
-                            , li [] [ text "Help center access" ]
-                            ]
-                        , button [ class "btn btn-lg btn-block btn-primary", type_ "button" ]
-                            [ text "Get started" ]
-                        ]
-                    ]
-                , div [ class "card mb-4 shadow-sm" ]
-                    [ div [ class "card-header" ]
-                        [ h4 [ class "my-0 font-weight-normal" ] [ text "Enterprise" ]
-                        ]
-                    , div [ class "card-body" ]
-                        [ h1 [ class "card-title pricing-card-title" ]
-                            [ text "$29 "
-                            , small [ class "text-muted" ] [ text "/ mo" ]
-                            ]
-                        , ul [ class "list-unstyled mt-3 mb-4" ]
-                            [ li [] [ text "30 users included" ]
-                            , li [] [ text "15 GB of storage" ]
-                            , li [] [ text "Phone and email support" ]
-                            , li [] [ text "Help center access" ]
-                            ]
-                        , button [ class "btn btn-lg btn-block btn-primary", type_ "button" ]
-                            [ text "Contact us" ]
-                        ]
-                    ]
+                    , callToAction = "Contact us"
+                    , callToActionOutline = False
+                    }
                 ]
+            ]
+        ]
+
+
+type alias PricingPlan =
+    { name : String
+    , pricePerMonth :
+        { usd : Int
+        }
+    , features : List String
+    , callToAction : String
+    , callToActionOutline : Bool
+    }
+
+
+viewPricingPlanCard : PricingPlan -> Html msg
+viewPricingPlanCard pricingPlan =
+    let
+        buttonClass =
+            if pricingPlan.callToActionOutline then
+                "btn-outline-primary"
+
+            else
+                "btn-primary"
+    in
+    div [ class "card mb-4 shadow-sm" ]
+        [ div [ class "card-header" ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ text pricingPlan.name ]
+            ]
+        , div [ class "card-body" ]
+            [ h1 [ class "card-title pricing-card-title" ]
+                [ text "$"
+                , text (String.fromInt pricingPlan.pricePerMonth.usd)
+                , text " "
+                , small [ class "text-muted" ] [ text "/ mo" ]
+                ]
+            , pricingPlan.features
+                |> List.map (\feature -> li [] [ text feature ])
+                |> ul [ class "list-unstyled mt-3 mb-4" ]
+            , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
+                [ text pricingPlan.callToAction ]
             ]
         ]
