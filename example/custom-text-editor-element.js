@@ -7,12 +7,12 @@ class CustomTextEditorElement extends HTMLElement {
     this.mainDiv = document.createElement('div');
     this.mainDiv.style.display = 'inline'; // NOTE: I'm not sure why making a div with display:inline works, but making a span makes it so that typing doesn't work when there's a cursor selection
     this.mainDiv.setAttribute('contenteditable', 'true');
-    this.mainDiv.innerHTML = this.getAttribute('content');
+    this.mainDiv.innerText = this.getAttribute('content');
 
     this.mainDiv.addEventListener("input", event => {
       var changedEvent = new CustomEvent(
         'content-changed',
-        { detail: {'innerText': event.target.innerText}}
+        { detail: {'textContent': event.target.textContent}}
       );
       this.dispatchEvent(changedEvent);
     });
@@ -24,7 +24,7 @@ class CustomTextEditorElement extends HTMLElement {
 
   attributeChangedCallback(attr, oldValue, newValue) {
     if (attr == 'content') {
-      if (this.mainDiv.innerText == newValue) {
+      if (this.mainDiv.textContent == newValue) {
         // Don't bother changing, since it will just mess up the cursor
       } else {
         this.mainDiv.innerHTML = newValue;

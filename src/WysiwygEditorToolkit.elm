@@ -39,15 +39,20 @@ viewTextEditable msg text =
         [ ( "editable"
           , Html.node "avh4-wysiwyg-editor-toolkit-text"
                 [ attribute "content" text
-                , Html.Events.on "content-changed" (Json.Decode.at [ "detail", "innerText" ] Json.Decode.string)
+                , Html.Events.on "content-changed"
+                    (Json.Decode.at [ "detail", "textContent" ] Json.Decode.string)
                     |> Html.Attributes.map msg
                 ]
-                []
+                [ -- The content here is just a fallback for when the custom element isn't available.
+                  -- When the custom element is available, the content here will be hidden by the custom element's shadow DOM.
+                  -- TODO: add some kind of warning when this happens to point to how to load the custom element
+                  Html.span
+                    [ Html.Attributes.contenteditable True
+                    , Html.Events.on "input"
+                        (Json.Decode.at [ "target", "textContent" ] Json.Decode.string)
+                        |> Html.Attributes.map msg
+                    ]
+                    [ Html.text text ]
+                ]
           )
         ]
-
-
-onContentEdited : (String -> msg) -> Html.Attribute msg
-onContentEdited msg =
-    Html.Events.on "input" (Json.Decode.at [ "target", "innerText" ] Json.Decode.string)
-        |> Html.Attributes.map msg
