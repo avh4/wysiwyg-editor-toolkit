@@ -1,0 +1,19 @@
+{
+  "name": "wysiwyg-editor-toolkit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "elm make --docs=docs.json && elm-test && elm-format --validate .",
+    "watch": "chokidar --initial elm.json 'src/**/*.elm' 'tests/**/*.elm' -c 'npm test'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "chokidar-cli": "^1.2.1",
+    "elm": "^0.19.0-bugfix6",
+    "elm-format": "^0.8.1",
+    "elm-test": "^0.19.0-rev4"
+  }
+}
