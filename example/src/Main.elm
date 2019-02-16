@@ -5,10 +5,21 @@ import Html exposing (Html, a, button, div, h1, h4, h5, img, li, p, small, text,
 import Html.Attributes exposing (alt, attribute, class, href, rel, src, type_)
 
 
-main : Program () {} Never
+type alias Model =
+    { editorData : PricingSummary
+    }
+
+
+initialModel : Model
+initialModel =
+    { editorData = pricingSummary
+    }
+
+
+main : Program () Model Never
 main =
     Browser.document
-        { init = \() -> ( {}, Cmd.none )
+        { init = \() -> ( initialModel, Cmd.none )
         , update = \_ model -> ( model, Cmd.none )
         , subscriptions = \model -> Sub.none
         , view =
@@ -20,7 +31,7 @@ main =
                     , Html.node "link" [ href "../bootstrap-4.3.1.min.css", rel "stylesheet", type_ "text/css" ] []
                     , Html.node "style" [] [ Html.text ".pricing-header { max-width: 700px }" ]
                     , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
-                    , pricingSummaryView pricingSummary
+                    , pricingSummaryView model.editorData
                     ]
                 }
         }
