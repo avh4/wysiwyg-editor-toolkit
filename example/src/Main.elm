@@ -82,6 +82,14 @@ applyPlanEdit path text plan =
         [ "name" ] ->
             { plan | name = text }
 
+        [ "price-usd" ] ->
+            case String.toInt text of
+                Just usd ->
+                    { plan | pricePerMonth = { usd = usd } }
+
+                Nothing ->
+                    plan
+
         _ ->
             plan
 
@@ -233,7 +241,7 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , text (String.fromInt pricingPlan.pricePerMonth.usd)
+                , viewOrEditText "price-usd" (String.fromInt pricingPlan.pricePerMonth.usd)
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
