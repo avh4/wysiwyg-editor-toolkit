@@ -27,7 +27,7 @@ initialModel =
 
 type Msg
     = SetRenderingMode RenderingMode
-    | Edit String
+    | Edit String String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -38,14 +38,23 @@ update msg model =
             , Cmd.none
             )
 
-        Edit text ->
-            let
-                ps =
-                    model.editorData
-            in
-            ( { model | editorData = { ps | intro = text } }
+        Edit path text ->
+            ( { model | editorData = applyEdit path text model.editorData }
             , Cmd.none
             )
+
+
+applyEdit : String -> String -> PricingSummary -> PricingSummary
+applyEdit path text data =
+    case path of
+        "title" ->
+            { data | title = text }
+
+        "intro" ->
+            { data | intro = text }
+
+        _ ->
+            data
 
 
 view : Model -> Browser.Document Msg
@@ -143,16 +152,20 @@ pricingSummary =
 
 pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
 pricingSummaryView renderingMode summary =
+    let
+        viewOrEditText path value =
+            case renderingMode of
+                Static ->
+                    Toolkit.viewTextStatic value
+
+                Editable ->
+                    Toolkit.viewTextEditable (Edit path) value
+    in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ text summary.title ]
+            [ h1 [ class "display-4" ] [ viewOrEditText "title" summary.title ]
             , p [ class "lead" ]
-                [ case renderingMode of
-                    Static ->
-                        Toolkit.viewTextStatic summary.intro
-
-                    Editable ->
-                        Toolkit.viewTextEditable Edit summary.intro
+                [ viewOrEditText "intro" summary.intro
                 ]
             ]
         , div [ class "container" ]
