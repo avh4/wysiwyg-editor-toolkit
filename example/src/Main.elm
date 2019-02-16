@@ -20,61 +20,17 @@ main =
                     , Html.node "link" [ href "../bootstrap-4.3.1.min.css", rel "stylesheet", type_ "text/css" ] []
                     , Html.node "style" [] [ Html.text ".pricing-header { max-width: 700px }" ]
                     , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
-                    , pricingView
+                    , pricingSummaryView pricingSummary
                     ]
                 }
         }
 
 
-pricingView : Html msg
-pricingView =
-    div []
-        [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ text "Pricing" ]
-            , p [ class "lead" ]
-                [ text "Quickly build an effective pricing table for your potential customers with this Bootstrap example. It’s built with default Bootstrap components and utilities with little customization." ]
-            ]
-        , div [ class "container" ]
-            [ div [ class "card-deck mb-3 text-center" ]
-                [ viewPricingPlanCard
-                    { name = "Free"
-                    , pricePerMonth = { usd = 0 }
-                    , features =
-                        [ "10 users included"
-                        , "2 GB of storage"
-                        , "Email support"
-                        , "Help center access"
-                        ]
-                    , callToAction = "Sign up for free"
-                    , callToActionOutline = True
-                    }
-                , viewPricingPlanCard
-                    { name = "Pro"
-                    , pricePerMonth = { usd = 15 }
-                    , features =
-                        [ "20 users included"
-                        , "10 GB of storage"
-                        , "Priority email support"
-                        , "Help center access"
-                        ]
-                    , callToAction = "Get started"
-                    , callToActionOutline = False
-                    }
-                , viewPricingPlanCard
-                    { name = "Enterprise"
-                    , pricePerMonth = { usd = 29 }
-                    , features =
-                        [ "30 users included"
-                        , "15 GB of storage"
-                        , "Phone and email support"
-                        , "Help center access"
-                        ]
-                    , callToAction = "Contact us"
-                    , callToActionOutline = False
-                    }
-                ]
-            ]
-        ]
+type alias PricingSummary =
+    { title : String
+    , intro : String
+    , plans : List PricingPlan
+    }
 
 
 type alias PricingPlan =
@@ -86,6 +42,64 @@ type alias PricingPlan =
     , callToAction : String
     , callToActionOutline : Bool
     }
+
+
+pricingSummary : PricingSummary
+pricingSummary =
+    { title = "Pricing"
+    , intro = "Quickly build an effective pricing table for your potential customers with this Bootstrap example. It’s built with default Bootstrap components and utilities with little customization."
+    , plans =
+        [ { name = "Free"
+          , pricePerMonth = { usd = 0 }
+          , features =
+                [ "10 users included"
+                , "2 GB of storage"
+                , "Email support"
+                , "Help center access"
+                ]
+          , callToAction = "Sign up for free"
+          , callToActionOutline = True
+          }
+        , { name = "Pro"
+          , pricePerMonth = { usd = 15 }
+          , features =
+                [ "20 users included"
+                , "10 GB of storage"
+                , "Priority email support"
+                , "Help center access"
+                ]
+          , callToAction = "Get started"
+          , callToActionOutline = False
+          }
+        , { name = "Enterprise"
+          , pricePerMonth = { usd = 29 }
+          , features =
+                [ "30 users included"
+                , "15 GB of storage"
+                , "Phone and email support"
+                , "Help center access"
+                ]
+          , callToAction = "Contact us"
+          , callToActionOutline = False
+          }
+        ]
+    }
+
+
+pricingSummaryView : PricingSummary -> Html msg
+pricingSummaryView summary =
+    div []
+        [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
+            [ h1 [ class "display-4" ] [ text summary.title ]
+            , p [ class "lead" ]
+                [ text summary.intro ]
+            ]
+        , div [ class "container" ]
+            [ summary.plans
+                |> List.map viewPricingPlanCard
+                |> div [ class "card-deck mb-3 text-center" ]
+            ]
+        ]
 
 
 viewPricingPlanCard : PricingPlan -> Html msg
