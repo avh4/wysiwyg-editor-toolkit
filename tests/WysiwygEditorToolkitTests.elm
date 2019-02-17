@@ -30,7 +30,11 @@ type alias Model =
     }
 
 
-start : (String -> Html String) -> TestContext String Model ()
+type Msg
+    = Edit String
+
+
+start : (String -> Html String) -> TestContext Msg Model ()
 start view =
     TestContext.create
         { init =
@@ -39,8 +43,17 @@ start view =
               }
             , ()
             )
-        , update = \msg model -> ( { model | editorData = msg }, () )
-        , view = \model -> view model.editorData
+        , update =
+            \msg model ->
+                case msg of
+                    Edit text ->
+                        ( { model | editorData = text }
+                        , ()
+                        )
+        , view =
+            \model ->
+                view model.editorData
+                    |> Html.map Edit
         }
 
 
