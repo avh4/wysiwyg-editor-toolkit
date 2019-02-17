@@ -2,6 +2,7 @@ module WysiwygEditorToolkitTests exposing (all)
 
 import Expect
 import Html exposing (Html)
+import Html.Attributes
 import Json.Encode
 import Test exposing (..)
 import Test.Html.Query as Query
@@ -13,9 +14,20 @@ import WysiwygEditorToolkit as Toolkit
 all : Test
 all =
     describe "WysiwygEditorToolkit" <|
-        [ test "can edit the value of a text field" <|
+        let
+            definition =
+                Toolkit.emptyDefinition
+        in
+        [ test "renders the value of a text field" <|
             \() ->
-                start (Toolkit.viewTextEditable identity)
+                start definition (Toolkit.viewTextEditable_ identity) "init"
+                    |> TestContext.expectView
+                        (Query.find [ tag "avh4-wysiwyg-editor-toolkit-text" ]
+                            >> Query.has [ attribute "content" "init" ]
+                        )
+        , test "can edit the value of a text field" <|
+            \() ->
+                start definition (Toolkit.viewTextEditable_ identity) "init"
                     |> fillInToolkitText
                         [ tag "avh4-wysiwyg-editor-toolkit-text" ]
                         "updated"
@@ -24,22 +36,26 @@ all =
         ]
 
 
-type alias Model =
+type alias Model data =
     { toolkitState : ()
-    , editorData : String
+    , editorData : data
     }
 
 
-type Msg
-    = Edit String
+type Msg data
+    = Edit data
 
 
-start : (String -> Html String) -> TestContext Msg Model ()
-start view =
+start :
+    Toolkit.Definition path data
+    -> (Toolkit.Context path data -> Html data)
+    -> data
+    -> TestContext (Msg data) (Model data) ()
+start definition testView init =
     TestContext.create
         { init =
             ( { toolkitState = ()
-              , editorData = "init"
+              , editorData = init
               }
             , ()
             )
@@ -52,7 +68,14 @@ start view =
                         )
         , view =
             \model ->
-                view model.editorData
+                let
+                    context =
+                        Toolkit.makeContext
+                            definition
+                            model.toolkitState
+                            model.editorData
+                in
+                testView context
                     |> Html.map Edit
         }
 
@@ -69,3 +92,7 @@ fillInToolkitText selectors text =
               )
             ]
         )
+
+
+attribute key value =
+    Test.Html.Selector.attribute (Html.Attributes.attribute key value)
