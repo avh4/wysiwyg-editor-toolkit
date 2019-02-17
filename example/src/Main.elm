@@ -277,8 +277,8 @@ pricingSummaryView renderingMode summary =
                         _ ->
                             Nothing
                 )
-                ( \f plan -> { plan | title = f plan.title }, Toolkit.string )
-                ( \f plan -> { plan | intro = f plan.intro }, Toolkit.string )
+                ( .title, \x plan -> { plan | title = x }, Toolkit.string )
+                ( .intro, \x plan -> { plan | intro = x }, Toolkit.string )
 
         context =
             Toolkit.makeContext
@@ -286,13 +286,13 @@ pricingSummaryView renderingMode summary =
                 Toolkit.initState
                 summary
 
-        viewOrEditText path get =
+        viewOrEditText path =
             case renderingMode of
                 Static ->
-                    Toolkit.viewTextStatic get context
+                    Toolkit.viewTextStatic path context
 
                 Editable ->
-                    Toolkit.viewTextEditable get path context
+                    Toolkit.viewTextEditable path context
                         |> Html.map (\( p, text ) -> Edit p text)
 
         addButton children =
@@ -318,9 +318,9 @@ pricingSummaryView renderingMode summary =
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ viewOrEditText Title .title ]
+            [ h1 [ class "display-4" ] [ viewOrEditText Title ]
             , p [ class "lead" ]
-                [ viewOrEditText Intro .intro
+                [ viewOrEditText Intro
                 ]
             ]
         , div [ class "container" ]
@@ -340,17 +340,17 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                 (\path ->
                     case path of
                         Name ->
-                            OneOfThree ()
+                            Just (OneOfThree ())
 
                         PriceUsd ->
-                            TwoOfThree ()
+                            Just (TwoOfThree ())
 
                         Features i ->
-                            ThreeOfThree ( i, () )
+                            Just (ThreeOfThree ( i, () ))
                 )
-                ( \f plan -> { plan | name = f plan.name }, Toolkit.string )
-                ( \f plan -> { plan | pricePerMonth = { usd = f plan.pricePerMonth.usd } }, Toolkit.int )
-                ( \f plan -> { plan | features = f plan.features }, Toolkit.list Toolkit.string )
+                ( .name, \x plan -> { plan | name = x }, Toolkit.string )
+                ( .pricePerMonth >> .usd, \x plan -> { plan | pricePerMonth = { usd = x } }, Toolkit.int )
+                ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
 
         context =
             Toolkit.makeContext
@@ -358,13 +358,13 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                 Toolkit.initState
                 pricingPlan
 
-        viewOrEditText path get =
+        viewOrEditText path =
             case renderingMode of
                 Static ->
-                    Toolkit.viewTextStatic get context
+                    Toolkit.viewTextStatic path context
 
                 Editable ->
-                    Toolkit.viewTextEditable get path context
+                    Toolkit.viewTextEditable path context
                         |> Html.map (\( p, text ) -> Edit (parentPath (Just p)) text)
 
         addButton children =
@@ -397,17 +397,17 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
     in
     div [ class "card mb-4 shadow-sm" ]
         ([ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name .name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name ]
             ]
          , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , viewOrEditText PriceUsd (String.fromInt << .usd << .pricePerMonth)
+                , viewOrEditText PriceUsd
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
             , pricingPlan.features
-                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features i) (always feature) ])
+                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features i) ])
                 |> ul [ class "list-unstyled mt-3 mb-4" ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]

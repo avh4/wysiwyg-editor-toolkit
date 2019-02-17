@@ -20,7 +20,7 @@ all =
                     Toolkit.string
 
                 view =
-                    Toolkit.viewTextEditable identity ()
+                    Toolkit.viewTextEditable ()
             in
             [ test "renders the value of a text field" <|
                 \() ->
@@ -50,11 +50,11 @@ all =
                                 Description ->
                                     Just (TwoOfTwo ())
                         )
-                        ( \f data -> { data | title = f data.title }, Toolkit.string )
-                        ( \f data -> { data | description = f data.description }, Toolkit.string )
+                        ( .title, \x data -> { data | title = x }, Toolkit.string )
+                        ( .description, \x data -> { data | description = x }, Toolkit.string )
 
                 view context =
-                    Toolkit.viewTextEditable .title Title context
+                    Toolkit.viewTextEditable Title context
             in
             [ test "renders the value of a text field" <|
                 \() ->
