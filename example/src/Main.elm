@@ -53,7 +53,7 @@ applyEdit path text data =
         [ "intro" ] ->
             { data | intro = text }
 
-        maybeIndex :: rest ->
+        "plans" :: maybeIndex :: rest ->
             case String.toInt maybeIndex of
                 Just index ->
                     { data
@@ -86,6 +86,25 @@ applyPlanEdit path text plan =
             case String.toInt text of
                 Just usd ->
                     { plan | pricePerMonth = { usd = usd } }
+
+                Nothing ->
+                    plan
+
+        "features" :: maybeIndex :: [] ->
+            case String.toInt maybeIndex of
+                Just index ->
+                    { plan
+                        | features =
+                            List.indexedMap
+                                (\i feature ->
+                                    if index == i then
+                                        text
+
+                                    else
+                                        feature
+                                )
+                                plan.features
+                    }
 
                 Nothing ->
                     plan
@@ -209,13 +228,13 @@ pricingSummaryView renderingMode summary =
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode (String.fromInt i))
+                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode [ "plans", String.fromInt i ])
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : RenderingMode -> String -> PricingPlan -> Html Msg
+viewPricingPlanCard : RenderingMode -> List String -> PricingPlan -> Html Msg
 viewPricingPlanCard renderingMode parentPath pricingPlan =
     let
         viewOrEditText path value =
@@ -224,7 +243,7 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                     Toolkit.viewTextStatic value
 
                 Editable ->
-                    Toolkit.viewTextEditable (Edit [ parentPath, path ]) value
+                    Toolkit.viewTextEditable (Edit (parentPath ++ path)) value
 
         buttonClass =
             if pricingPlan.callToActionOutline then
@@ -235,17 +254,17 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
     in
     div [ class "card mb-4 shadow-sm" ]
         [ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText "name" pricingPlan.name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText [ "name" ] pricingPlan.name ]
             ]
         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , viewOrEditText "price-usd" (String.fromInt pricingPlan.pricePerMonth.usd)
+                , viewOrEditText [ "price-usd" ] (String.fromInt pricingPlan.pricePerMonth.usd)
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
             , pricingPlan.features
-                |> List.map (\feature -> li [] [ text feature ])
+                |> List.indexedMap (\i feature -> li [] [ viewOrEditText [ "features", String.fromInt i ] feature ])
                 |> ul [ class "list-unstyled mt-3 mb-4" ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
