@@ -2,7 +2,7 @@ module Main exposing (main)
 
 import Browser
 import Html exposing (Html, a, button, div, h1, h4, h5, img, li, p, small, text, ul)
-import Html.Attributes exposing (alt, attribute, class, href, rel, src, type_, value)
+import Html.Attributes exposing (alt, attribute, class, href, rel, src, style, type_, value)
 import Html.Events exposing (onClick)
 import WysiwygEditorToolkit as Toolkit
 
@@ -28,6 +28,8 @@ initialModel =
 type Msg
     = SetRenderingMode RenderingMode
     | Edit PricingSummaryPath String
+    | Add PricingSummaryPath
+    | Delete PricingSummaryPath
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -43,6 +45,16 @@ update msg model =
             , Cmd.none
             )
 
+        Add path ->
+            ( { model | editorData = applyAdd path model.editorData }
+            , Cmd.none
+            )
+
+        Delete path ->
+            ( { model | editorData = applyDelete path model.editorData }
+            , Cmd.none
+            )
+
 
 applyEdit : PricingSummaryPath -> String -> PricingSummary -> PricingSummary
 applyEdit path text data =
@@ -53,7 +65,7 @@ applyEdit path text data =
         Intro ->
             { data | intro = text }
 
-        Plan index rest ->
+        Plans (Just ( index, Just rest )) ->
             { data
                 | plans =
                     List.indexedMap
@@ -66,6 +78,9 @@ applyEdit path text data =
                         )
                         data.plans
             }
+
+        _ ->
+            data
 
 
 applyPlanEdit : PricingPlanPath -> String -> PricingPlan -> PricingPlan
@@ -95,6 +110,48 @@ applyPlanEdit path text plan =
                         )
                         plan.features
             }
+
+
+applyAdd : PricingSummaryPath -> PricingSummary -> PricingSummary
+applyAdd path data =
+    case path of
+        Plans Nothing ->
+            { data
+                | plans =
+                    data.plans
+                        ++ [ { name = "New plan"
+                             , callToAction = "Contact us"
+                             , callToActionOutline = False
+                             , features = [ "New features" ]
+                             , pricePerMonth = { usd = 99 }
+                             }
+                           ]
+            }
+
+        _ ->
+            data
+
+
+applyDelete : PricingSummaryPath -> PricingSummary -> PricingSummary
+applyDelete path data =
+    case path of
+        Plans (Just ( index, Nothing )) ->
+            { data
+                | plans =
+                    data.plans
+                        |> List.indexedMap
+                            (\i plan ->
+                                if i == index then
+                                    Nothing
+
+                                else
+                                    Just plan
+                            )
+                        |> List.filterMap identity
+            }
+
+        _ ->
+            data
 
 
 view : Model -> Browser.Document Msg
@@ -142,7 +199,7 @@ type alias PricingSummary =
 type PricingSummaryPath
     = Title
     | Intro
-    | Plan Int PricingPlanPath
+    | Plans (Maybe ( Int, Maybe PricingPlanPath ))
 
 
 type alias PricingPlan =
@@ -214,6 +271,27 @@ pricingSummaryView renderingMode summary =
 
                 Editable ->
                     Toolkit.viewTextEditable (Edit path) value
+
+        addButton children =
+            case renderingMode of
+                Static ->
+                    children
+
+                Editable ->
+                    children
+                        ++ [ Html.button
+                                [ style "position" "absolute"
+                                , style "flex-grow" "1"
+                                , style "bottom" "5px"
+                                , style "right" "10px"
+                                , style "background-color" "pink"
+                                , style "opacity" "0.5"
+                                , style "padding" "5px 15px"
+                                , style "border-radius" "5px"
+                                , onClick (Add (Plans Nothing))
+                                ]
+                                [ Html.text "Add" ]
+                           ]
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
@@ -224,13 +302,14 @@ pricingSummaryView renderingMode summary =
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode (Plan i))
+                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode (\p -> Plans (Just ( i, p ))))
+                |> addButton
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : RenderingMode -> (PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
+viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
 viewPricingPlanCard renderingMode parentPath pricingPlan =
     let
         viewOrEditText path value =
@@ -239,7 +318,28 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                     Toolkit.viewTextStatic value
 
                 Editable ->
-                    Toolkit.viewTextEditable (Edit (parentPath path)) value
+                    Toolkit.viewTextEditable (Edit (parentPath (Just path))) value
+
+        addButton children =
+            case renderingMode of
+                Static ->
+                    children
+
+                Editable ->
+                    children
+                        ++ [ Html.button
+                                [ style "position" "absolute"
+                                , style "flex-grow" "1"
+                                , style "top" "5px"
+                                , style "right" "10px"
+                                , style "background-color" "pink"
+                                , style "opacity" "0.5"
+                                , style "padding" "5px 15px"
+                                , style "border-radius" "5px"
+                                , onClick (Delete (parentPath Nothing))
+                                ]
+                                [ Html.text "Delete" ]
+                           ]
 
         buttonClass =
             if pricingPlan.callToActionOutline then
@@ -249,10 +349,10 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                 "btn-primary"
     in
     div [ class "card mb-4 shadow-sm" ]
-        [ div [ class "card-header" ]
+        ([ div [ class "card-header" ]
             [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name pricingPlan.name ]
             ]
-        , div [ class "card-body" ]
+         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
                 , viewOrEditText PriceUsd (String.fromInt pricingPlan.pricePerMonth.usd)
@@ -265,4 +365,6 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
             ]
-        ]
+         ]
+            |> addButton
+        )
