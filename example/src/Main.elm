@@ -102,7 +102,7 @@ applyPlanEdit path text plan =
                 | features =
                     List.indexedMap
                         (\i feature ->
-                            if index == i then
+                            if index == Just i then
                                 text
 
                             else
@@ -216,7 +216,7 @@ type alias PricingPlan =
 type PricingPlanPath
     = Name
     | PriceUsd
-    | Features Int
+    | Features (Maybe Int)
 
 
 pricingPlanDefinition : Toolkit.Definition PricingPlanPath PricingPlan
@@ -230,8 +230,11 @@ pricingPlanDefinition =
                 PriceUsd ->
                     Just (TwoOfThree ())
 
-                Features i ->
-                    Just (ThreeOfThree ( i, () ))
+                Features Nothing ->
+                    Just (ThreeOfThree Nothing)
+
+                Features (Just i) ->
+                    Just (ThreeOfThree (Just ( i, () )))
         )
         ( .name, \x plan -> { plan | name = x }, Toolkit.string )
         ( .pricePerMonth >> .usd, \x plan -> { plan | pricePerMonth = { usd = x } }, Toolkit.int )
@@ -293,8 +296,11 @@ pricingSummaryView renderingMode summary =
                         Intro ->
                             Just (TwoOfThree ())
 
+                        Plans Nothing ->
+                            Just (ThreeOfThree Nothing)
+
                         Plans (Just ( i, Just p )) ->
-                            Just (ThreeOfThree ( i, p ))
+                            Just (ThreeOfThree (Just ( i, p )))
 
                         _ ->
                             Nothing
@@ -407,7 +413,7 @@ viewPricingPlanCard renderingMode parentPath pricingPlan context =
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
             , pricingPlan.features
-                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features i) ])
+                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features (Just i)) ])
                 |> ul [ class "list-unstyled mt-3 mb-4" ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
