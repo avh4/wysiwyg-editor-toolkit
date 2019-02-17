@@ -1,6 +1,6 @@
 module WysiwygEditorToolkit exposing
     ( viewTextEditable, viewTextStatic
-    , Context, Definition, emptyDefinition, makeContext, viewTextEditable_
+    , Context, Definition, applyEdit, makeContext, object2, string, viewTextEditable_
     )
 
 {-| WysiwygEditorToolkit gives you tools to create "what-you-see-is-what-you-get" (WYSIWYG) editors
@@ -22,10 +22,38 @@ import Json.Decode
 
 type Definition path data
     = Definition
+        { applyEdit : path -> String -> data -> data
+        }
 
 
-emptyDefinition =
+string : Definition () String
+string =
     Definition
+        { applyEdit = \() text _ -> text
+        }
+
+
+object2 :
+    (data1 -> data2 -> data)
+    -> (path -> Result path1 path2)
+    -> ( path1 -> path, data -> data1, Definition path1 data1 )
+    -> ( path2 -> path, data -> data2, Definition path2 data2 )
+    -> Definition path data
+object2 fn unpath ( _, get1, def1 ) ( _, get2, def2 ) =
+    Definition
+        { applyEdit =
+            \path text data ->
+                case unpath path of
+                    Err p1 ->
+                        fn
+                            (applyEdit def1 p1 text (get1 data))
+                            (get2 data)
+
+                    Ok p2 ->
+                        fn
+                            (get1 data)
+                            (applyEdit def2 p2 text (get2 data))
+        }
 
 
 type Context path data
@@ -45,6 +73,11 @@ makeContext definition state data =
         }
 
 
+applyEdit : Definition path data -> path -> String -> data -> data
+applyEdit (Definition definition) path text data =
+    definition.applyEdit path text data
+
+
 {-| This is the static version of [`viewTextEditable`](#viewTextEditable).
 -}
 viewTextStatic : String -> Html msg
@@ -58,9 +91,10 @@ viewTextStatic text =
         ]
 
 
-viewTextEditable_ : (String -> msg) -> Context () String -> Html msg
-viewTextEditable_ msg (Context context) =
-    viewTextEditable msg context.data
+viewTextEditable_ : (data -> String) -> path -> Context path data -> Html ( path, String )
+viewTextEditable_ get path (Context context) =
+    viewTextEditable identity (get context.data)
+        |> Html.map (Tuple.pair path)
 
 
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
