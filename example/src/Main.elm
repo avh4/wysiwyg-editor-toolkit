@@ -219,6 +219,25 @@ type PricingPlanPath
     | Features Int
 
 
+pricingPlanDefinition : Toolkit.Definition PricingPlanPath PricingPlan
+pricingPlanDefinition =
+    Toolkit.object3
+        (\path ->
+            case path of
+                Name ->
+                    Just (OneOfThree ())
+
+                PriceUsd ->
+                    Just (TwoOfThree ())
+
+                Features i ->
+                    Just (ThreeOfThree ( i, () ))
+        )
+        ( .name, \x plan -> { plan | name = x }, Toolkit.string )
+        ( .pricePerMonth >> .usd, \x plan -> { plan | pricePerMonth = { usd = x } }, Toolkit.int )
+        ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
+
+
 pricingSummary : PricingSummary
 pricingSummary =
     { title = "Pricing"
@@ -265,20 +284,24 @@ pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
 pricingSummaryView renderingMode summary =
     let
         definition =
-            Toolkit.object2
+            Toolkit.object3
                 (\path ->
                     case path of
                         Title ->
-                            Just (OneOfTwo ())
+                            Just (OneOfThree ())
 
                         Intro ->
-                            Just (TwoOfTwo ())
+                            Just (TwoOfThree ())
+
+                        Plans (Just ( i, Just p )) ->
+                            Just (ThreeOfThree ( i, p ))
 
                         _ ->
                             Nothing
                 )
-                ( .title, \x plan -> { plan | title = x }, Toolkit.string )
-                ( .intro, \x plan -> { plan | intro = x }, Toolkit.string )
+                ( .title, \x data -> { data | title = x }, Toolkit.string )
+                ( .intro, \x data -> { data | intro = x }, Toolkit.string )
+                ( .plans, \x data -> { data | plans = x }, Toolkit.list pricingPlanDefinition )
 
         context =
             Toolkit.makeContext
@@ -325,39 +348,16 @@ pricingSummaryView renderingMode summary =
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode (\p -> Plans (Just ( i, p ))))
+                |> List.indexedMap (\i plan -> viewPricingPlanCard renderingMode (\p -> Plans (Just ( i, p ))) plan (Toolkit.focus (\p -> Plans (Just ( i, Just p ))) context))
                 |> addButton
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
-viewPricingPlanCard renderingMode parentPath pricingPlan =
+viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Toolkit.Context PricingPlanPath any -> Html Msg
+viewPricingPlanCard renderingMode parentPath pricingPlan context =
     let
-        definition =
-            Toolkit.object3
-                (\path ->
-                    case path of
-                        Name ->
-                            Just (OneOfThree ())
-
-                        PriceUsd ->
-                            Just (TwoOfThree ())
-
-                        Features i ->
-                            Just (ThreeOfThree ( i, () ))
-                )
-                ( .name, \x plan -> { plan | name = x }, Toolkit.string )
-                ( .pricePerMonth >> .usd, \x plan -> { plan | pricePerMonth = { usd = x } }, Toolkit.int )
-                ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
-
-        context =
-            Toolkit.makeContext
-                definition
-                Toolkit.initState
-                pricingPlan
-
         viewOrEditText path =
             case renderingMode of
                 Static ->

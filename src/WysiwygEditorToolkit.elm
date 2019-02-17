@@ -4,7 +4,7 @@ module WysiwygEditorToolkit exposing
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
     , State, initState
     , applyEdit
-    , Context, makeContext
+    , Context, makeContext, focus
     , viewTextEditable, viewTextStatic
     )
 
@@ -38,7 +38,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 You will create a `Context` in your view function by combining your static `Definition`,
 the opaque toolkit `State`, and your application's `data`.
 
-@docs Context, makeContext
+@docs Context, makeContext, focus
 
 
 ## Text
@@ -74,6 +74,14 @@ type Definition path data
         }
 
 
+comapDefinition : (path1 -> path) -> Definition path data -> Definition path1 data
+comapDefinition f (Definition definition) =
+    Definition
+        { applyEdit = \p1 -> definition.applyEdit (f p1)
+        , getString = \p1 -> definition.getString (f p1)
+        }
+
+
 {-| The definition of a data structure with a single editable String value
 -}
 string : Definition () String
@@ -103,7 +111,7 @@ int =
 list : Definition path data -> Definition ( Int, path ) (List data)
 list item =
     Definition
-        { applyEdit = \_ _ d -> d -- TODO
+        { applyEdit = \_ _ d -> Debug.todo "Toolkit.list.applyEdit"
         , getString =
             \( i, p ) items ->
                 List.drop i items
@@ -305,6 +313,16 @@ makeContext definition state data =
     Context
         { definition = definition
         , data = data
+        }
+
+
+{-| Make a `Context` representing a substructure of the given context.
+-}
+focus : (path1 -> path) -> Context path data -> Context path1 data
+focus parentPath (Context context) =
+    Context
+        { definition = comapDefinition parentPath context.definition
+        , data = context.data
         }
 
 
