@@ -27,7 +27,7 @@ initialModel =
 
 type Msg
     = SetRenderingMode RenderingMode
-    | Edit (List String) String
+    | Edit PricingSummaryPath String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -44,45 +44,37 @@ update msg model =
             )
 
 
-applyEdit : List String -> String -> PricingSummary -> PricingSummary
+applyEdit : PricingSummaryPath -> String -> PricingSummary -> PricingSummary
 applyEdit path text data =
     case path of
-        [ "title" ] ->
+        Title ->
             { data | title = text }
 
-        [ "intro" ] ->
+        Intro ->
             { data | intro = text }
 
-        "plans" :: maybeIndex :: rest ->
-            case String.toInt maybeIndex of
-                Just index ->
-                    { data
-                        | plans =
-                            List.indexedMap
-                                (\i plan ->
-                                    if index == i then
-                                        applyPlanEdit rest text plan
+        Plan index rest ->
+            { data
+                | plans =
+                    List.indexedMap
+                        (\i plan ->
+                            if index == i then
+                                applyPlanEdit rest text plan
 
-                                    else
-                                        plan
-                                )
-                                data.plans
-                    }
-
-                Nothing ->
-                    data
-
-        _ ->
-            data
+                            else
+                                plan
+                        )
+                        data.plans
+            }
 
 
-applyPlanEdit : List String -> String -> PricingPlan -> PricingPlan
+applyPlanEdit : PricingPlanPath -> String -> PricingPlan -> PricingPlan
 applyPlanEdit path text plan =
     case path of
-        [ "name" ] ->
+        Name ->
             { plan | name = text }
 
-        [ "price-usd" ] ->
+        PriceUsd ->
             case String.toInt text of
                 Just usd ->
                     { plan | pricePerMonth = { usd = usd } }
@@ -90,27 +82,19 @@ applyPlanEdit path text plan =
                 Nothing ->
                     plan
 
-        "features" :: maybeIndex :: [] ->
-            case String.toInt maybeIndex of
-                Just index ->
-                    { plan
-                        | features =
-                            List.indexedMap
-                                (\i feature ->
-                                    if index == i then
-                                        text
+        Features index ->
+            { plan
+                | features =
+                    List.indexedMap
+                        (\i feature ->
+                            if index == i then
+                                text
 
-                                    else
-                                        feature
-                                )
-                                plan.features
-                    }
-
-                Nothing ->
-                    plan
-
-        _ ->
-            plan
+                            else
+                                feature
+                        )
+                        plan.features
+            }
 
 
 view : Model -> Browser.Document Msg
@@ -155,6 +139,12 @@ type alias PricingSummary =
     }
 
 
+type PricingSummaryPath
+    = Title
+    | Intro
+    | Plan Int PricingPlanPath
+
+
 type alias PricingPlan =
     { name : String
     , pricePerMonth :
@@ -164,6 +154,12 @@ type alias PricingPlan =
     , callToAction : String
     , callToActionOutline : Bool
     }
+
+
+type PricingPlanPath
+    = Name
+    | PriceUsd
+    | Features Int
 
 
 pricingSummary : PricingSummary
@@ -221,20 +217,20 @@ pricingSummaryView renderingMode summary =
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ viewOrEditText [ "title" ] summary.title ]
+            [ h1 [ class "display-4" ] [ viewOrEditText Title summary.title ]
             , p [ class "lead" ]
-                [ viewOrEditText [ "intro" ] summary.intro
+                [ viewOrEditText Intro summary.intro
                 ]
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode [ "plans", String.fromInt i ])
+                |> List.indexedMap (\i -> viewPricingPlanCard renderingMode (Plan i))
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : RenderingMode -> List String -> PricingPlan -> Html Msg
+viewPricingPlanCard : RenderingMode -> (PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
 viewPricingPlanCard renderingMode parentPath pricingPlan =
     let
         viewOrEditText path value =
@@ -243,7 +239,7 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                     Toolkit.viewTextStatic value
 
                 Editable ->
-                    Toolkit.viewTextEditable (Edit (parentPath ++ path)) value
+                    Toolkit.viewTextEditable (Edit (parentPath path)) value
 
         buttonClass =
             if pricingPlan.callToActionOutline then
@@ -254,17 +250,17 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
     in
     div [ class "card mb-4 shadow-sm" ]
         [ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText [ "name" ] pricingPlan.name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name pricingPlan.name ]
             ]
         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , viewOrEditText [ "price-usd" ] (String.fromInt pricingPlan.pricePerMonth.usd)
+                , viewOrEditText PriceUsd (String.fromInt pricingPlan.pricePerMonth.usd)
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
             , pricingPlan.features
-                |> List.indexedMap (\i feature -> li [] [ viewOrEditText [ "features", String.fromInt i ] feature ])
+                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features i) feature ])
                 |> ul [ class "list-unstyled mt-3 mb-4" ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
