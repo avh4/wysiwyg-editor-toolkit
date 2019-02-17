@@ -1,4 +1,4 @@
-class CustomTextEditorElement extends HTMLElement {
+class AvhWysiwygEditorToolkitTextElement extends HTMLElement {
   constructor() {
     super();
 
@@ -34,5 +34,5 @@ class CustomTextEditorElement extends HTMLElement {
   }
 }
 
-window.customElements.define('avh4-wysiwyg-editor-toolkit-text', CustomTextEditorElement);
+window.customElements.define('avh4-wysiwyg-editor-toolkit-text', AvhWysiwygEditorToolkitTextElement);
 
