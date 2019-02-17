@@ -51,8 +51,8 @@ all =
                                 Description ->
                                     Ok ()
                         )
-                        ( \() -> Title, .title, Toolkit.string )
-                        ( \() -> Description, .description, Toolkit.string )
+                        ( .title, Toolkit.string )
+                        ( .description, Toolkit.string )
 
                 view context =
                     Toolkit.viewTextEditable_ .title Title context

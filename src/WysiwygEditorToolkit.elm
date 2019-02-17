@@ -36,10 +36,10 @@ string =
 object2 :
     (data1 -> data2 -> data)
     -> (path -> Result path1 path2)
-    -> ( path1 -> path, data -> data1, Definition path1 data1 )
-    -> ( path2 -> path, data -> data2, Definition path2 data2 )
+    -> ( data -> data1, Definition path1 data1 )
+    -> ( data -> data2, Definition path2 data2 )
     -> Definition path data
-object2 fn unpath ( _, get1, def1 ) ( _, get2, def2 ) =
+object2 fn unpath ( get1, def1 ) ( get2, def2 ) =
     Definition
         { applyEdit =
             \path text data ->
