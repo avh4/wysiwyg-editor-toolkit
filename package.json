@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "elm make --docs=documentation.json",
-    "test": "npm run-script build && npm run-script build-example && elm-format --validate .",
+    "test": "elm-test && npm run-script build && npm run-script build-example && elm-format --validate .",
     "build-example": "(cd example && elm make --output main.js src/Main.elm)",
     "watch": "chokidar --initial elm.json 'src/**/*.elm' 'tests/**/*.elm' 'example/**/*.elm' -c 'npm test'",
     "serve": "(cd example && http-server -p 8081 .)"
