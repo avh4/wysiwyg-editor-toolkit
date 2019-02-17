@@ -8,7 +8,7 @@ import Test exposing (..)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (Selector, tag)
 import TestContext exposing (TestContext)
-import WysiwygEditorToolkit as Toolkit
+import WysiwygEditorToolkit as Toolkit exposing (OfTwo(..))
 
 
 all : Test
@@ -20,7 +20,7 @@ all =
                     Toolkit.string
 
                 view =
-                    Toolkit.viewTextEditable_ identity ()
+                    Toolkit.viewTextEditable identity ()
             in
             [ test "renders the value of a text field" <|
                 \() ->
@@ -42,20 +42,19 @@ all =
             let
                 definition =
                     Toolkit.object2
-                        (\t d -> { title = t, description = d })
                         (\p ->
                             case p of
                                 Title ->
-                                    Err ()
+                                    Just (OneOfTwo ())
 
                                 Description ->
-                                    Ok ()
+                                    Just (TwoOfTwo ())
                         )
-                        ( .title, Toolkit.string )
-                        ( .description, Toolkit.string )
+                        ( \f data -> { data | title = f data.title }, Toolkit.string )
+                        ( \f data -> { data | description = f data.description }, Toolkit.string )
 
                 view context =
-                    Toolkit.viewTextEditable_ .title Title context
+                    Toolkit.viewTextEditable .title Title context
             in
             [ test "renders the value of a text field" <|
                 \() ->

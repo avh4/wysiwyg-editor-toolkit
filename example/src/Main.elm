@@ -4,7 +4,7 @@ import Browser
 import Html exposing (Html, a, button, div, h1, h4, h5, img, li, p, small, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, rel, src, style, type_, value)
 import Html.Events exposing (onClick)
-import WysiwygEditorToolkit as Toolkit
+import WysiwygEditorToolkit as Toolkit exposing (OfThree(..), OfTwo(..))
 
 
 type alias Model =
@@ -264,13 +264,36 @@ pricingSummary =
 pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
 pricingSummaryView renderingMode summary =
     let
-        viewOrEditText path value =
+        definition =
+            Toolkit.object2
+                (\path ->
+                    case path of
+                        Title ->
+                            Just (OneOfTwo ())
+
+                        Intro ->
+                            Just (TwoOfTwo ())
+
+                        _ ->
+                            Nothing
+                )
+                ( \f plan -> { plan | title = f plan.title }, Toolkit.string )
+                ( \f plan -> { plan | intro = f plan.intro }, Toolkit.string )
+
+        context =
+            Toolkit.makeContext
+                definition
+                Toolkit.initState
+                summary
+
+        viewOrEditText path get =
             case renderingMode of
                 Static ->
-                    Toolkit.viewTextStatic value
+                    Toolkit.viewTextStatic get context
 
                 Editable ->
-                    Toolkit.viewTextEditable (Edit path) value
+                    Toolkit.viewTextEditable get path context
+                        |> Html.map (\( p, text ) -> Edit p text)
 
         addButton children =
             case renderingMode of
@@ -295,9 +318,9 @@ pricingSummaryView renderingMode summary =
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ viewOrEditText Title summary.title ]
+            [ h1 [ class "display-4" ] [ viewOrEditText Title .title ]
             , p [ class "lead" ]
-                [ viewOrEditText Intro summary.intro
+                [ viewOrEditText Intro .intro
                 ]
             ]
         , div [ class "container" ]
@@ -312,13 +335,37 @@ pricingSummaryView renderingMode summary =
 viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
 viewPricingPlanCard renderingMode parentPath pricingPlan =
     let
-        viewOrEditText path value =
+        definition =
+            Toolkit.object3
+                (\path ->
+                    case path of
+                        Name ->
+                            OneOfThree ()
+
+                        PriceUsd ->
+                            TwoOfThree ()
+
+                        Features i ->
+                            ThreeOfThree ( i, () )
+                )
+                ( \f plan -> { plan | name = f plan.name }, Toolkit.string )
+                ( \f plan -> { plan | pricePerMonth = { usd = f plan.pricePerMonth.usd } }, Toolkit.int )
+                ( \f plan -> { plan | features = f plan.features }, Toolkit.list Toolkit.string )
+
+        context =
+            Toolkit.makeContext
+                definition
+                Toolkit.initState
+                pricingPlan
+
+        viewOrEditText path get =
             case renderingMode of
                 Static ->
-                    Toolkit.viewTextStatic value
+                    Toolkit.viewTextStatic get context
 
                 Editable ->
-                    Toolkit.viewTextEditable (Edit (parentPath (Just path))) value
+                    Toolkit.viewTextEditable get path context
+                        |> Html.map (\( p, text ) -> Edit (parentPath (Just p)) text)
 
         addButton children =
             case renderingMode of
@@ -350,17 +397,17 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
     in
     div [ class "card mb-4 shadow-sm" ]
         ([ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name pricingPlan.name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name .name ]
             ]
          , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , viewOrEditText PriceUsd (String.fromInt pricingPlan.pricePerMonth.usd)
+                , viewOrEditText PriceUsd (String.fromInt << .usd << .pricePerMonth)
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
             , pricingPlan.features
-                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features i) feature ])
+                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features i) (always feature) ])
                 |> ul [ class "list-unstyled mt-3 mb-4" ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
