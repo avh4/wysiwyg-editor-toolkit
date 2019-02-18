@@ -41,7 +41,7 @@ update msg model =
             )
 
         Edit path text ->
-            ( { model | editorData = applyEdit path text model.editorData }
+            ( { model | editorData = Toolkit.applyEdit pricingSummaryDefinition path text model.editorData }
             , Cmd.none
             )
 
@@ -54,62 +54,6 @@ update msg model =
             ( { model | editorData = applyDelete path model.editorData }
             , Cmd.none
             )
-
-
-applyEdit : PricingSummaryPath -> String -> PricingSummary -> PricingSummary
-applyEdit path text data =
-    case path of
-        Title ->
-            { data | title = text }
-
-        Intro ->
-            { data | intro = text }
-
-        Plans (Just ( index, Just rest )) ->
-            { data
-                | plans =
-                    List.indexedMap
-                        (\i plan ->
-                            if index == i then
-                                applyPlanEdit rest text plan
-
-                            else
-                                plan
-                        )
-                        data.plans
-            }
-
-        _ ->
-            data
-
-
-applyPlanEdit : PricingPlanPath -> String -> PricingPlan -> PricingPlan
-applyPlanEdit path text plan =
-    case path of
-        Name ->
-            { plan | name = text }
-
-        PriceUsd ->
-            case String.toInt text of
-                Just usd ->
-                    { plan | pricePerMonth = { usd = usd } }
-
-                Nothing ->
-                    plan
-
-        Features index ->
-            { plan
-                | features =
-                    List.indexedMap
-                        (\i feature ->
-                            if index == Just i then
-                                text
-
-                            else
-                                feature
-                        )
-                        plan.features
-            }
 
 
 applyAdd : PricingSummaryPath -> PricingSummary -> PricingSummary
@@ -202,6 +146,31 @@ type PricingSummaryPath
     | Plans (Maybe ( Int, Maybe PricingPlanPath ))
 
 
+pricingSummaryDefinition : Toolkit.Definition PricingSummaryPath PricingSummary
+pricingSummaryDefinition =
+    Toolkit.object3
+        (\path ->
+            case path of
+                Title ->
+                    Just (OneOfThree ())
+
+                Intro ->
+                    Just (TwoOfThree ())
+
+                Plans Nothing ->
+                    Just (ThreeOfThree Nothing)
+
+                Plans (Just ( i, Just p )) ->
+                    Just (ThreeOfThree (Just ( i, p )))
+
+                _ ->
+                    Nothing
+        )
+        ( .title, \x data -> { data | title = x }, Toolkit.string )
+        ( .intro, \x data -> { data | intro = x }, Toolkit.string )
+        ( .plans, \x data -> { data | plans = x }, Toolkit.list pricingPlanDefinition )
+
+
 type alias PricingPlan =
     { name : String
     , pricePerMonth :
@@ -286,32 +255,9 @@ pricingSummary =
 pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
 pricingSummaryView renderingMode summary =
     let
-        definition =
-            Toolkit.object3
-                (\path ->
-                    case path of
-                        Title ->
-                            Just (OneOfThree ())
-
-                        Intro ->
-                            Just (TwoOfThree ())
-
-                        Plans Nothing ->
-                            Just (ThreeOfThree Nothing)
-
-                        Plans (Just ( i, Just p )) ->
-                            Just (ThreeOfThree (Just ( i, p )))
-
-                        _ ->
-                            Nothing
-                )
-                ( .title, \x data -> { data | title = x }, Toolkit.string )
-                ( .intro, \x data -> { data | intro = x }, Toolkit.string )
-                ( .plans, \x data -> { data | plans = x }, Toolkit.list pricingPlanDefinition )
-
         context =
             Toolkit.makeContext
-                definition
+                pricingSummaryDefinition
                 Toolkit.initState
                 summary
 

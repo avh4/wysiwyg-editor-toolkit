@@ -109,9 +109,24 @@ int =
 {-| The definition of a data structure with an editable list of editable data structures.
 -}
 list : Definition path data -> Definition (Maybe ( Int, path )) (List data)
-list item =
+list itemDef =
     Definition
-        { applyEdit = \_ _ d -> Debug.todo "Toolkit.list.applyEdit"
+        { applyEdit =
+            \mp text items ->
+                case mp of
+                    Nothing ->
+                        items
+
+                    Just ( index, p ) ->
+                        List.indexedMap
+                            (\i item ->
+                                if i == index then
+                                    applyEdit itemDef p text item
+
+                                else
+                                    item
+                            )
+                            items
         , getString =
             \mp items ->
                 case mp of
@@ -121,7 +136,7 @@ list item =
                     Just ( i, p ) ->
                         List.drop i items
                             |> List.head
-                            |> Maybe.andThen (getString item p)
+                            |> Maybe.andThen (getString itemDef p)
         }
 
 
