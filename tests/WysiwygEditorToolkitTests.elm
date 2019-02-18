@@ -87,12 +87,12 @@ type alias Model data =
 
 
 type Msg path
-    = Edit path String
+    = ToolkitAction (Toolkit.EditAction path)
 
 
 start :
     Toolkit.Definition path data
-    -> (Toolkit.Context path data -> Html ( path, String ))
+    -> (Toolkit.Context path data -> Html (Toolkit.EditAction path))
     -> data
     -> TestContext (Msg path) (Model data) ()
 start definition testView init =
@@ -106,9 +106,9 @@ start definition testView init =
         , update =
             \msg model ->
                 case msg of
-                    Edit path text ->
+                    ToolkitAction action ->
                         ( { model
-                            | editorData = Toolkit.applyEdit definition path text model.editorData
+                            | editorData = Toolkit.update definition action model.editorData
                           }
                         , ()
                         )
@@ -122,7 +122,7 @@ start definition testView init =
                             model.editorData
                 in
                 testView context
-                    |> Html.map (\( p, d ) -> Edit p d)
+                    |> Html.map ToolkitAction
         }
 
 

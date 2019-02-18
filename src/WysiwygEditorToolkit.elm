@@ -3,7 +3,7 @@ module WysiwygEditorToolkit exposing
     , string, int, list
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
     , State, initState
-    , applyEdit
+    , EditAction, update, mapAction
     , Context, makeContext, focus
     , viewTextEditable, viewTextStatic
     )
@@ -30,7 +30,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 ## State and updating
 
 @docs State, initState
-@docs applyEdit
+@docs EditAction, update, mapAction
 
 
 ## Contexts
@@ -346,8 +346,33 @@ focus parentPath (Context context) =
         }
 
 
-{-| TODO: generalize this into an `update`
+{-| Represents an edit to be performed on a data structure that can be navigated with the given `path` type.
+
+Use [`update`](#update) along with your data structure's [`Definition`](#Definition) to apply the edit.
+
 -}
+type EditAction path
+    = Edit path String
+
+
+{-| Transform an `EditAction` to operator on a larger data structure.
+-}
+mapAction : (path1 -> path) -> EditAction path1 -> EditAction path
+mapAction f action =
+    case action of
+        Edit path text ->
+            Edit (f path) text
+
+
+{-| Apply an `EditAction` to a data structure.
+-}
+update : Definition path data -> EditAction path -> data -> data
+update definition action data =
+    case action of
+        Edit path text ->
+            applyEdit definition path text data
+
+
 applyEdit : Definition path data -> path -> String -> data -> data
 applyEdit (Definition definition) path text data =
     definition.applyEdit path text data
@@ -385,7 +410,7 @@ viewTextStatic path (Context context) =
 
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
 -}
-viewTextEditable : path -> Context path data -> Html ( path, String )
+viewTextEditable : path -> Context path data -> Html (EditAction path)
 viewTextEditable path (Context context) =
     case getString context.definition path context.data of
         Nothing ->
@@ -419,4 +444,4 @@ viewTextEditable path (Context context) =
                         ]
                   )
                 ]
-                |> Html.map (Tuple.pair path)
+                |> Html.map (Edit path)

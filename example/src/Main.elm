@@ -27,7 +27,7 @@ initialModel =
 
 type Msg
     = SetRenderingMode RenderingMode
-    | Edit PricingSummaryPath String
+    | ToolkitAction (Toolkit.EditAction PricingSummaryPath)
     | Add PricingSummaryPath
     | Delete PricingSummaryPath
 
@@ -40,8 +40,8 @@ update msg model =
             , Cmd.none
             )
 
-        Edit path text ->
-            ( { model | editorData = Toolkit.applyEdit pricingSummaryDefinition path text model.editorData }
+        ToolkitAction action ->
+            ( { model | editorData = Toolkit.update pricingSummaryDefinition action model.editorData }
             , Cmd.none
             )
 
@@ -268,7 +268,7 @@ pricingSummaryView renderingMode summary =
 
                 Editable ->
                     Toolkit.viewTextEditable path context
-                        |> Html.map (\( p, text ) -> Edit p text)
+                        |> Html.map ToolkitAction
 
         addButton children =
             case renderingMode of
@@ -317,7 +317,8 @@ viewPricingPlanCard renderingMode parentPath pricingPlan context =
 
                 Editable ->
                     Toolkit.viewTextEditable path context
-                        |> Html.map (\( p, text ) -> Edit (parentPath (Just p)) text)
+                        |> Html.map (Toolkit.mapAction (Just >> parentPath))
+                        |> Html.map ToolkitAction
 
         addButton children =
             case renderingMode of
