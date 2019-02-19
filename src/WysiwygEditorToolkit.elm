@@ -4,6 +4,7 @@ module WysiwygEditorToolkit exposing
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
     , State, initState
     , EditAction, update, mapAction
+    , deleteAction
     , viewTextEditable, viewTextStatic
     )
 
@@ -30,6 +31,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 @docs State, initState
 @docs EditAction, update, mapAction
+@docs deleteAction
 
 
 ## Text
@@ -335,6 +337,13 @@ type EditAction path
 type Operation
     = Edit String
     | Delete
+
+
+{-| TODO: do we need to expose this?
+-}
+deleteAction : path -> EditAction path
+deleteAction path =
+    EditAction path Delete
 
 
 {-| Transform an `EditAction` to operate on a larger data structure.

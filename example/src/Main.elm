@@ -29,7 +29,6 @@ type Msg
     = SetRenderingMode RenderingMode
     | ToolkitAction (Toolkit.EditAction PricingSummaryPath)
     | Add PricingSummaryPath
-    | Delete PricingSummaryPath
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -47,11 +46,6 @@ update msg model =
 
         Add path ->
             ( { model | editorData = applyAdd path model.editorData }
-            , Cmd.none
-            )
-
-        Delete path ->
-            ( { model | editorData = applyDelete path model.editorData }
             , Cmd.none
             )
 
@@ -324,9 +318,10 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                                 , style "opacity" "0.5"
                                 , style "padding" "5px 15px"
                                 , style "border-radius" "5px"
-                                , onClick (Delete (parentPath Nothing))
+                                , onClick (Toolkit.deleteAction (parentPath Nothing))
                                 ]
                                 [ Html.text "Delete" ]
+                                |> Html.map ToolkitAction
                            ]
 
         buttonClass =
