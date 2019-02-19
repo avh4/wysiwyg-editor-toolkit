@@ -255,19 +255,13 @@ pricingSummary =
 pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
 pricingSummaryView renderingMode summary =
     let
-        context =
-            Toolkit.makeContext
-                pricingSummaryDefinition
-                Toolkit.initState
-                summary
-
         viewOrEditText path =
             case renderingMode of
                 Static ->
-                    Toolkit.viewTextStatic path context
+                    Toolkit.viewTextStatic pricingSummaryDefinition path summary
 
                 Editable ->
-                    Toolkit.viewTextEditable path context
+                    Toolkit.viewTextEditable pricingSummaryDefinition path summary
                         |> Html.map ToolkitAction
 
         addButton children =
@@ -300,23 +294,23 @@ pricingSummaryView renderingMode summary =
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.indexedMap (\i plan -> viewPricingPlanCard renderingMode (\p -> Plans (Just ( i, p ))) plan (Toolkit.focus (\p -> Plans (Just ( i, Just p ))) context))
+                |> List.indexedMap (\i plan -> viewPricingPlanCard renderingMode (\p -> Plans (Just ( i, p ))) plan)
                 |> addButton
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Toolkit.Context PricingPlanPath any -> Html Msg
-viewPricingPlanCard renderingMode parentPath pricingPlan context =
+viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
+viewPricingPlanCard renderingMode parentPath pricingPlan =
     let
         viewOrEditText path =
             case renderingMode of
                 Static ->
-                    Toolkit.viewTextStatic path context
+                    Toolkit.viewTextStatic pricingPlanDefinition path pricingPlan
 
                 Editable ->
-                    Toolkit.viewTextEditable path context
+                    Toolkit.viewTextEditable pricingPlanDefinition path pricingPlan
                         |> Html.map (Toolkit.mapAction (Just >> parentPath))
                         |> Html.map ToolkitAction
 

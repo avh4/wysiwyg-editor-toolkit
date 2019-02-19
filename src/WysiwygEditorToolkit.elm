@@ -4,7 +4,6 @@ module WysiwygEditorToolkit exposing
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
     , State, initState
     , EditAction, update, mapAction
-    , Context, makeContext, focus
     , viewTextEditable, viewTextStatic
     )
 
@@ -31,14 +30,6 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 @docs State, initState
 @docs EditAction, update, mapAction
-
-
-## Contexts
-
-You will create a `Context` in your view function by combining your static `Definition`,
-the opaque toolkit `State`, and your application's `data`.
-
-@docs Context, makeContext, focus
 
 
 ## Text
@@ -298,10 +289,6 @@ object5 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) ( get3, put3, 
 {-| Private UI state for the editor toolkit.
 You should create this with `initState` when your program starts, and store it in
 your applications Model.
-
-You will use this with `makeContext` in your view function,
-and will update it with `applyEdit` in your update function.
-
 -}
 type alias State =
     ()
@@ -312,38 +299,6 @@ type alias State =
 initState : State
 initState =
     ()
-
-
-{-| See [`makeContext`](#makeContext).
--}
-type Context path data
-    = Context
-        { definition : Definition path data
-        , data : data
-        }
-
-
-{-| You will create a `Context` in your view function by combining your static `Definition`,
-the opaque toolkit `State`, and your application's `data`.
-The `Context` is then passed to other functions in this module to render the UI widgets
-that render and/or edit the `data`.
--}
-makeContext : Definition path data -> State -> data -> Context path data
-makeContext definition state data =
-    Context
-        { definition = definition
-        , data = data
-        }
-
-
-{-| Make a `Context` representing a substructure of the given context.
--}
-focus : (path1 -> path) -> Context path data -> Context path1 data
-focus parentPath (Context context) =
-    Context
-        { definition = comapDefinition parentPath context.definition
-        , data = context.data
-        }
 
 
 {-| Represents an edit to be performed on a data structure that can be navigated with the given `path` type.
@@ -385,16 +340,16 @@ getString (Definition definition) path data =
 
 {-| This is the static version of [`viewTextEditable`](#viewTextEditable).
 -}
-viewTextStatic : path -> Context path data -> Html msg
-viewTextStatic path (Context context) =
-    case getString context.definition path context.data of
+viewTextStatic : Definition path data -> path -> data -> Html msg
+viewTextStatic definition path data =
+    case getString definition path data of
         Nothing ->
             Html.text <|
                 String.concat
                     [ "[The given path cannot render a text value: path = "
                     , Debug.toString path
                     , "  data = "
-                    , Debug.toString context.data
+                    , Debug.toString data
                     , "]"
                     ]
 
@@ -410,16 +365,16 @@ viewTextStatic path (Context context) =
 
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
 -}
-viewTextEditable : path -> Context path data -> Html (EditAction path)
-viewTextEditable path (Context context) =
-    case getString context.definition path context.data of
+viewTextEditable : Definition path data -> path -> data -> Html (EditAction path)
+viewTextEditable definition path data =
+    case getString definition path data of
         Nothing ->
             Html.text <|
                 String.concat
                     [ "[The given path cannot render a text value: path = "
                     , Debug.toString path
                     , "  data = "
-                    , Debug.toString context.data
+                    , Debug.toString data
                     , "]"
                     ]
 

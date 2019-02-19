@@ -19,8 +19,8 @@ all =
                 definition =
                     Toolkit.string
 
-                view =
-                    Toolkit.viewTextEditable ()
+                view d =
+                    Toolkit.viewTextEditable d ()
             in
             [ test "renders the value of a text field" <|
                 \() ->
@@ -53,8 +53,8 @@ all =
                         ( .title, \x data -> { data | title = x }, Toolkit.string )
                         ( .description, \x data -> { data | description = x }, Toolkit.string )
 
-                view context =
-                    Toolkit.viewTextEditable Title context
+                view d =
+                    Toolkit.viewTextEditable d Title
             in
             [ test "renders the value of a text field" <|
                 \() ->
@@ -92,7 +92,7 @@ type Msg path
 
 start :
     Toolkit.Definition path data
-    -> (Toolkit.Context path data -> Html (Toolkit.EditAction path))
+    -> (Toolkit.Definition path data -> data -> Html (Toolkit.EditAction path))
     -> data
     -> TestContext (Msg path) (Model data) ()
 start definition testView init =
@@ -114,14 +114,7 @@ start definition testView init =
                         )
         , view =
             \model ->
-                let
-                    context =
-                        Toolkit.makeContext
-                            definition
-                            model.toolkitState
-                            model.editorData
-                in
-                testView context
+                testView definition model.editorData
                     |> Html.map ToolkitAction
         }
 
