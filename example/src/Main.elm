@@ -157,14 +157,8 @@ pricingSummaryDefinition =
                 Intro ->
                     Just (TwoOfThree ())
 
-                Plans Nothing ->
-                    Just (ThreeOfThree Nothing)
-
-                Plans (Just ( i, Just p )) ->
-                    Just (ThreeOfThree (Just ( i, p )))
-
-                _ ->
-                    Nothing
+                Plans p ->
+                    Just (ThreeOfThree p)
         )
         ( .title, \x data -> { data | title = x }, Toolkit.string )
         ( .intro, \x data -> { data | intro = x }, Toolkit.string )
@@ -203,7 +197,7 @@ pricingPlanDefinition =
                     Just (ThreeOfThree Nothing)
 
                 Features (Just i) ->
-                    Just (ThreeOfThree (Just ( i, () )))
+                    Just (ThreeOfThree (Just ( i, Just () )))
         )
         ( .name, \x plan -> { plan | name = x }, Toolkit.string )
         ( .pricePerMonth >> .usd, \x plan -> { plan | pricePerMonth = { usd = x } }, Toolkit.int )

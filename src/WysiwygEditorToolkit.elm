@@ -60,16 +60,8 @@ The `path` for a single value would simply be `()`.
 -}
 type Definition path data
     = Definition
-        { applyEdit : path -> String -> data -> data
+        { update : EditAction path -> data -> data
         , getString : path -> data -> Maybe String
-        }
-
-
-comapDefinition : (path1 -> path) -> Definition path data -> Definition path1 data
-comapDefinition f (Definition definition) =
-    Definition
-        { applyEdit = \p1 -> definition.applyEdit (f p1)
-        , getString = \p1 -> definition.getString (f p1)
         }
 
 
@@ -78,7 +70,14 @@ comapDefinition f (Definition definition) =
 string : Definition () String
 string =
     Definition
-        { applyEdit = \() text _ -> text
+        { update =
+            \(EditAction () op) value ->
+                case op of
+                    Edit text ->
+                        text
+
+                    Delete ->
+                        value
         , getString = \() text -> Just text
         }
 
@@ -88,10 +87,15 @@ string =
 int : Definition () Int
 int =
     Definition
-        { applyEdit =
-            \() text old ->
-                String.toInt text
-                    |> Maybe.withDefault old
+        { update =
+            \(EditAction () op) old ->
+                case op of
+                    Edit text ->
+                        String.toInt text
+                            |> Maybe.withDefault old
+
+                    Delete ->
+                        old
         , getString =
             \() value -> Just (String.fromInt value)
         }
@@ -99,32 +103,50 @@ int =
 
 {-| The definition of a data structure with an editable list of editable data structures.
 -}
-list : Definition path data -> Definition (Maybe ( Int, path )) (List data)
+list : Definition path data -> Definition (Maybe ( Int, Maybe path )) (List data)
 list itemDef =
     Definition
-        { applyEdit =
-            \mp text items ->
-                case mp of
-                    Nothing ->
-                        items
-
-                    Just ( index, p ) ->
+        { update =
+            \action items ->
+                case action of
+                    EditAction (Just ( index, Just p )) op ->
                         List.indexedMap
                             (\i item ->
                                 if i == index then
-                                    applyEdit itemDef p text item
+                                    update itemDef (EditAction p op) item
 
                                 else
                                     item
                             )
                             items
+
+                    EditAction _ (Edit _) ->
+                        items
+
+                    EditAction (Just ( index, Nothing )) Delete ->
+                        List.indexedMap
+                            (\i item ->
+                                if i == index then
+                                    Nothing
+
+                                else
+                                    Just item
+                            )
+                            items
+                            |> List.filterMap identity
+
+                    EditAction _ Delete ->
+                        items
         , getString =
             \mp items ->
                 case mp of
                     Nothing ->
                         Nothing
 
-                    Just ( i, p ) ->
+                    Just ( _, Nothing ) ->
+                        Nothing
+
+                    Just ( i, Just p ) ->
                         List.drop i items
                             |> List.head
                             |> Maybe.andThen (getString itemDef p)
@@ -147,17 +169,17 @@ object2 :
     -> Definition path data
 object2 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) =
     Definition
-        { applyEdit =
-            \path text data ->
+        { update =
+            \(EditAction path op) data ->
                 case deconstructPath path of
                     Nothing ->
                         data
 
                     Just (OneOfTwo p1) ->
-                        put1 (applyEdit def1 p1 text (get1 data)) data
+                        put1 (update def1 (EditAction p1 op) (get1 data)) data
 
                     Just (TwoOfTwo p2) ->
-                        put2 (applyEdit def2 p2 text (get2 data)) data
+                        put2 (update def2 (EditAction p2 op) (get2 data)) data
         , getString =
             \path data ->
                 case deconstructPath path of
@@ -190,20 +212,20 @@ object3 :
     -> Definition path data
 object3 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) ( get3, put3, def3 ) =
     Definition
-        { applyEdit =
-            \path text data ->
+        { update =
+            \(EditAction path op) data ->
                 case deconstructPath path of
                     Nothing ->
                         data
 
                     Just (OneOfThree p1) ->
-                        put1 (applyEdit def1 p1 text (get1 data)) data
+                        put1 (update def1 (EditAction p1 op) (get1 data)) data
 
                     Just (TwoOfThree p2) ->
-                        put2 (applyEdit def2 p2 text (get2 data)) data
+                        put2 (update def2 (EditAction p2 op) (get2 data)) data
 
                     Just (ThreeOfThree p3) ->
-                        put3 (applyEdit def3 p3 text (get3 data)) data
+                        put3 (update def3 (EditAction p3 op) (get3 data)) data
         , getString =
             \path data ->
                 case deconstructPath path of
@@ -243,26 +265,26 @@ object5 :
     -> Definition path data
 object5 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) ( get3, put3, def3 ) ( get4, put4, def4 ) ( get5, put5, def5 ) =
     Definition
-        { applyEdit =
-            \path text data ->
+        { update =
+            \(EditAction path op) data ->
                 case deconstructPath path of
                     Nothing ->
                         data
 
                     Just (OneOfFive p1) ->
-                        put1 (applyEdit def1 p1 text (get1 data)) data
+                        put1 (update def1 (EditAction p1 op) (get1 data)) data
 
                     Just (TwoOfFive p2) ->
-                        put2 (applyEdit def2 p2 text (get2 data)) data
+                        put2 (update def2 (EditAction p2 op) (get2 data)) data
 
                     Just (ThreeOfFive p3) ->
-                        put3 (applyEdit def3 p3 text (get3 data)) data
+                        put3 (update def3 (EditAction p3 op) (get3 data)) data
 
                     Just (FourOfFive p4) ->
-                        put4 (applyEdit def4 p4 text (get4 data)) data
+                        put4 (update def4 (EditAction p4 op) (get4 data)) data
 
                     Just (FiveOfFive p5) ->
-                        put5 (applyEdit def5 p5 text (get5 data)) data
+                        put5 (update def5 (EditAction p5 op) (get5 data)) data
         , getString =
             \path data ->
                 case deconstructPath path of
@@ -307,30 +329,26 @@ Use [`update`](#update) along with your data structure's [`Definition`](#Definit
 
 -}
 type EditAction path
-    = Edit path String
+    = EditAction path Operation
 
 
-{-| Transform an `EditAction` to operator on a larger data structure.
+type Operation
+    = Edit String
+    | Delete
+
+
+{-| Transform an `EditAction` to operate on a larger data structure.
 -}
 mapAction : (path1 -> path) -> EditAction path1 -> EditAction path
-mapAction f action =
-    case action of
-        Edit path text ->
-            Edit (f path) text
+mapAction f (EditAction path op) =
+    EditAction (f path) op
 
 
 {-| Apply an `EditAction` to a data structure.
 -}
 update : Definition path data -> EditAction path -> data -> data
-update definition action data =
-    case action of
-        Edit path text ->
-            applyEdit definition path text data
-
-
-applyEdit : Definition path data -> path -> String -> data -> data
-applyEdit (Definition definition) path text data =
-    definition.applyEdit path text data
+update (Definition definition) action data =
+    definition.update action data
 
 
 getString : Definition path data -> path -> data -> Maybe String
@@ -399,4 +417,4 @@ viewTextEditable definition path data =
                         ]
                   )
                 ]
-                |> Html.map (Edit path)
+                |> Html.map (Edit >> EditAction path)
