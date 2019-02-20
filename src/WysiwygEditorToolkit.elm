@@ -6,6 +6,7 @@ module WysiwygEditorToolkit exposing
     , EditAction, update, mapAction
     , deleteAction
     , viewTextEditable, viewTextStatic
+    , viewComments
     )
 
 {-| WysiwygEditorToolkit gives you tools to create "what-you-see-is-what-you-get" (WYSIWYG) editors
@@ -37,6 +38,13 @@ for your UIs. Each view function in this module is part of a set of functions--a
 ## Text
 
 @docs viewTextEditable, viewTextStatic
+
+
+## Comments
+
+Comments are automatically displayed when using other editing widgets (like [`viewTextEditable`](#viewTextEditable)), but you can also add them manually for paths that do not correspond to other edigint widgets.
+
+@docs viewComments
 
 -}
 
@@ -457,6 +465,13 @@ viewTextEditable definition state path data =
                 |> Html.map (Edit >> EditAction path)
 
 
+{-| Displays the comments thread (and comments editor) for the given path.
+
+(Note that other views like [`viewTextEditable`](#viewTextEditable) include
+this automatically, so you only need to use this for paths in your data that
+don't have a more specific editor view.)
+
+-}
 viewComments : State path -> path -> Html msg
 viewComments (State state) path =
     let

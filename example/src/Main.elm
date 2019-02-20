@@ -333,6 +333,7 @@ pricingSummaryView renderingMode state summary =
                     )
                 |> addButton
                 |> div [ class "card-deck mb-3 text-center" ]
+            , Toolkit.viewComments state (Plans Nothing)
             ]
         ]
 
@@ -390,9 +391,14 @@ viewPricingPlanCard renderingMode state parentPath pricingPlan =
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
-            , pricingPlan.features
-                |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features (Just i)) ])
-                |> ul [ class "list-unstyled mt-3 mb-4" ]
+            , Html.div
+                [ style "position" "relative"
+                ]
+                [ pricingPlan.features
+                    |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features (Just i)) ])
+                    |> ul [ class "list-unstyled mt-3 mb-4" ]
+                , Toolkit.viewComments state (Features Nothing)
+                ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
             ]
