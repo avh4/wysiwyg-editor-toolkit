@@ -1,14 +1,17 @@
 module Main exposing (main)
 
 import Browser
+import Dict
 import Html exposing (Html, a, button, div, h1, h4, h5, img, li, p, small, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, rel, src, style, type_, value)
 import Html.Events exposing (onClick)
+import Time
 import WysiwygEditorToolkit as Toolkit exposing (OfThree(..), OfTwo(..))
 
 
 type alias Model =
     { editorData : PricingSummary
+    , toolkitState : Toolkit.State PricingSummaryPath
     , renderingMode : RenderingMode
     }
 
@@ -21,6 +24,45 @@ type RenderingMode
 initialModel : Model
 initialModel =
     { editorData = pricingSummary
+    , toolkitState =
+        Toolkit.initState Debug.toString <|
+            let
+                quest =
+                    { name = "Quest"
+                    , avatar = "https://gravatar.com/avatar/f9879d71855b5ff21e4963273a886bfc"
+                    }
+
+                west =
+                    { name = "West J"
+                    , avatar = "https://www.gravatar.com/avatar/205e460b479e2e5b48aec07710c08d50"
+                    }
+            in
+            [ ( Title
+              , [ { content = "Maybe \"Plans for Everyone\"?"
+                  , author = quest
+                  , createdAt = Time.millisToPosix 0
+                  }
+                ]
+              )
+            , ( Plans (Just ( 2, Just (Features Nothing) ))
+              , [ { content = "Can we add one more item here?"
+                  , author = west
+                  , createdAt = Time.millisToPosix 250000000
+                  }
+                ]
+              )
+            , ( Plans (Just ( 3, Just PriceUsd ))
+              , [ { content = "Are the price changes happening next month?"
+                  , author = quest
+                  , createdAt = Time.millisToPosix 100000000
+                  }
+                , { content = "changes aren't finalized yet"
+                  , author = west
+                  , createdAt = Time.millisToPosix 200000000
+                  }
+                ]
+              )
+            ]
     , renderingMode = Editable
     }
 

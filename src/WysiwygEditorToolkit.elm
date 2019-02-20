@@ -40,6 +40,8 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 -}
 
+import Comments exposing (Comment)
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes exposing (attribute)
 import Html.Events
@@ -314,15 +316,22 @@ object5 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) ( get3, put3, 
 You should create this with `initState` when your program starts, and store it in
 your applications Model.
 -}
-type alias State =
-    ()
+type State path
+    = State
+        { comments : Dict String (List Comment)
+        }
 
 
 {-| Creates an initial toolkit State. See [`State`](#State).
 -}
-initState : State
-initState =
-    ()
+initState : (path -> String) -> List ( path, List Comment ) -> State path
+initState pathToString comments =
+    State
+        { comments =
+            comments
+                |> List.map (Tuple.mapFirst pathToString)
+                |> Dict.fromList
+        }
 
 
 {-| Represents an edit to be performed on a data structure that can be navigated with the given `path` type.
