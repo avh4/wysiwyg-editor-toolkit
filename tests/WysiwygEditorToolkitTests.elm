@@ -19,8 +19,11 @@ all =
                 definition =
                     Toolkit.string
 
+                state =
+                    Toolkit.initState Debug.toString []
+
                 view d =
-                    Toolkit.viewTextEditable d ()
+                    Toolkit.viewTextEditable d state ()
             in
             [ test "renders the value of a text field" <|
                 \() ->
@@ -53,8 +56,11 @@ all =
                         ( .title, \x data -> { data | title = x }, Toolkit.string )
                         ( .description, \x data -> { data | description = x }, Toolkit.string )
 
+                state =
+                    Toolkit.initState Debug.toString []
+
                 view d =
-                    Toolkit.viewTextEditable d Title
+                    Toolkit.viewTextEditable d state Title
             in
             [ test "renders the value of a text field" <|
                 \() ->

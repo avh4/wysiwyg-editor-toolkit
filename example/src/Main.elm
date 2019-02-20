@@ -44,14 +44,14 @@ initialModel =
                   }
                 ]
               )
-            , ( Plans (Just ( 2, Just (Features Nothing) ))
+            , ( Plans (Just ( 1, Just (Features Nothing) ))
               , [ { content = "Can we add one more item here?"
                   , author = west
                   , createdAt = Time.millisToPosix 250000000
                   }
                 ]
               )
-            , ( Plans (Just ( 3, Just PriceUsd ))
+            , ( Plans (Just ( 2, Just PriceUsd ))
               , [ { content = "Are the price changes happening next month?"
                   , author = quest
                   , createdAt = Time.millisToPosix 100000000
@@ -152,7 +152,7 @@ view model =
                     ]
         , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
         , Html.hr [] []
-        , pricingSummaryView model.renderingMode model.editorData
+        , pricingSummaryView model.renderingMode model.toolkitState model.editorData
         , Html.hr [] []
         , Html.code [] [ Html.text (Debug.toString model.editorData) ]
         ]
@@ -282,8 +282,8 @@ pricingSummary =
     }
 
 
-pricingSummaryView : RenderingMode -> PricingSummary -> Html Msg
-pricingSummaryView renderingMode summary =
+pricingSummaryView : RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
+pricingSummaryView renderingMode state summary =
     let
         viewOrEditText path =
             case renderingMode of
@@ -291,7 +291,7 @@ pricingSummaryView renderingMode summary =
                     Toolkit.viewTextStatic pricingSummaryDefinition path summary
 
                 Editable ->
-                    Toolkit.viewTextEditable pricingSummaryDefinition path summary
+                    Toolkit.viewTextEditable pricingSummaryDefinition state path summary
                         |> Html.map ToolkitAction
 
         addButton children =
@@ -324,15 +324,21 @@ pricingSummaryView renderingMode summary =
             ]
         , div [ class "container" ]
             [ summary.plans
-                |> List.indexedMap (\i plan -> viewPricingPlanCard renderingMode (\p -> Plans (Just ( i, p ))) plan)
+                |> List.indexedMap
+                    (\i plan ->
+                        viewPricingPlanCard renderingMode
+                            (Toolkit.focusState (\p -> Plans (Just ( i, Just p ))) state)
+                            (\p -> Plans (Just ( i, p )))
+                            plan
+                    )
                 |> addButton
                 |> div [ class "card-deck mb-3 text-center" ]
             ]
         ]
 
 
-viewPricingPlanCard : RenderingMode -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
-viewPricingPlanCard renderingMode parentPath pricingPlan =
+viewPricingPlanCard : RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
+viewPricingPlanCard renderingMode state parentPath pricingPlan =
     let
         viewOrEditText path =
             case renderingMode of
@@ -340,7 +346,7 @@ viewPricingPlanCard renderingMode parentPath pricingPlan =
                     Toolkit.viewTextStatic pricingPlanDefinition path pricingPlan
 
                 Editable ->
-                    Toolkit.viewTextEditable pricingPlanDefinition path pricingPlan
+                    Toolkit.viewTextEditable pricingPlanDefinition state path pricingPlan
                         |> Html.map (Toolkit.mapAction (Just >> parentPath))
                         |> Html.map ToolkitAction
 

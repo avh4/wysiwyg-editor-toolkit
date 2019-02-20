@@ -2,7 +2,7 @@ module WysiwygEditorToolkit exposing
     ( Definition
     , string, int, list
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
-    , State, initState
+    , State, initState, focusState
     , EditAction, update, mapAction
     , deleteAction
     , viewTextEditable, viewTextStatic
@@ -29,7 +29,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 ## State and updating
 
-@docs State, initState
+@docs State, initState, focusState
 @docs EditAction, update, mapAction
 @docs deleteAction
 
@@ -43,7 +43,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 import Comments exposing (Comment)
 import Dict exposing (Dict)
 import Html exposing (Html)
-import Html.Attributes exposing (attribute)
+import Html.Attributes exposing (attribute, src, style)
 import Html.Events
 import Html.Keyed
 import Json.Decode
@@ -318,7 +318,9 @@ your applications Model.
 -}
 type State path
     = State
-        { comments : Dict String (List Comment)
+        { pathToString : path -> String
+        , comments : Dict String (List Comment)
+        , unsavedComments : Dict String String
         }
 
 
@@ -327,10 +329,23 @@ type State path
 initState : (path -> String) -> List ( path, List Comment ) -> State path
 initState pathToString comments =
     State
-        { comments =
+        { pathToString = pathToString
+        , comments =
             comments
                 |> List.map (Tuple.mapFirst pathToString)
                 |> Dict.fromList
+        , unsavedComments = Dict.empty
+        }
+
+
+{-| Creates a State that focuses on a substructure of the given State.
+-}
+focusState : (path1 -> path) -> State path -> State path1
+focusState mapPath (State state) =
+    State
+        { pathToString = mapPath >> state.pathToString
+        , comments = state.comments
+        , unsavedComments = state.unsavedComments
         }
 
 
@@ -401,8 +416,8 @@ viewTextStatic definition path data =
 
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
 -}
-viewTextEditable : Definition path data -> path -> data -> Html (EditAction path)
-viewTextEditable definition path data =
+viewTextEditable : Definition path data -> State path -> path -> data -> Html (EditAction path)
+viewTextEditable definition state path data =
     case getString definition path data of
         Nothing ->
             Html.text <|
@@ -416,7 +431,8 @@ viewTextEditable definition path data =
 
         Just text ->
             Html.Keyed.node "span"
-                []
+                [ style "position" "relative"
+                ]
                 [ ( "editable"
                   , Html.node "avh4-wysiwyg-editor-toolkit-text"
                         [ attribute "content" text
@@ -434,5 +450,88 @@ viewTextEditable definition path data =
                             [ Html.text text ]
                         ]
                   )
+                , ( "comments"
+                  , viewComments state path
+                  )
                 ]
                 |> Html.map (Edit >> EditAction path)
+
+
+viewComments : State path -> path -> Html msg
+viewComments (State state) path =
+    let
+        pathString =
+            state.pathToString path
+
+        comments =
+            Dict.get pathString state.comments
+                |> Maybe.withDefault []
+
+        unsavedComment =
+            Dict.get pathString state.unsavedComments
+                |> Maybe.withDefault ""
+    in
+    if List.isEmpty comments then
+        Html.text ""
+
+    else
+        Html.div
+            [ style "position" "absolute"
+            , style "font-size" "10px"
+            , style "background" "pink"
+            , style "top" "0px"
+            , style "left" "100%"
+            , style "width" "250px"
+            , style "border-radius" "5px"
+            , style "border" "2px solid palevioletred"
+            , style "opacity" "0.9"
+            , style "z-index" "100"
+            ]
+        <|
+            List.concat
+                [ comments
+                    |> List.map viewComment
+                , [ Html.div
+                        [ style "border-top" "2px solid palevioletred"
+                        , style "padding" "10px"
+                        ]
+                        [ Html.textarea
+                            [ style "border" "none"
+                            , style "background" "transparent"
+                            , style "width" "100%"
+                            ]
+                            [ Html.text unsavedComment
+                            ]
+                        ]
+                  ]
+                ]
+
+
+viewComment : Comment -> Html msg
+viewComment comment =
+    Html.div
+        [ style "display" "grid"
+        , style "grid-template-columns" "25px 1fr 1fr"
+        , style "grid-template-rows" "1fr 1fr"
+        , style "grid-gap" "5px"
+        , style "padding" "10px"
+        ]
+        [ Html.img
+            [ src comment.author.avatar
+            , style "width" "100%"
+            , style "grid-area" "1/1/-1"
+            ]
+            []
+        , Html.div
+            [ style "grid-area" "1/2"
+            ]
+            [ Html.text comment.author.name ]
+        , Html.div
+            [ style "grid-area" "1/3"
+            ]
+            [ Html.text "1 day ago" ]
+        , Html.div
+            [ style "grid-area" "2/2/-1/-1"
+            ]
+            [ Html.text comment.content ]
+        ]
