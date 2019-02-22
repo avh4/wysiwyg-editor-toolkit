@@ -86,25 +86,25 @@ type Path
     | Description
 
 
-type alias Model data =
-    { toolkitState : ()
+type alias Model path data =
+    { toolkitState : Toolkit.State path
     , editorData : data
     }
 
 
 type Msg path
-    = ToolkitAction (Toolkit.EditAction path)
+    = ToolkitMsg (Toolkit.Msg path)
 
 
 start :
     Toolkit.Definition path data
-    -> (Toolkit.Definition path data -> data -> Html (Toolkit.EditAction path))
+    -> (Toolkit.Definition path data -> data -> Html (Toolkit.Msg path))
     -> data
-    -> TestContext (Msg path) (Model data) ()
+    -> TestContext (Msg path) (Model path data) ()
 start definition testView init =
     TestContext.create
         { init =
-            ( { toolkitState = ()
+            ( { toolkitState = Toolkit.initState Debug.toString []
               , editorData = init
               }
             , ()
@@ -112,16 +112,21 @@ start definition testView init =
         , update =
             \msg model ->
                 case msg of
-                    ToolkitAction action ->
+                    ToolkitMsg toolkitMsg ->
+                        let
+                            ( newData, newState ) =
+                                Toolkit.update definition toolkitMsg model.toolkitState model.editorData
+                        in
                         ( { model
-                            | editorData = Toolkit.update definition action model.editorData
+                            | editorData = newData
+                            , toolkitState = newState
                           }
                         , ()
                         )
         , view =
             \model ->
                 testView definition model.editorData
-                    |> Html.map ToolkitAction
+                    |> Html.map ToolkitMsg
         }
 
 

@@ -2,8 +2,8 @@ module WysiwygEditorToolkit exposing
     ( Definition
     , string, int, list
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
-    , State, initState, focusState
-    , EditAction, update, mapAction
+    , State, initState, focusState, Msg, update, mapMsg
+    , EditAction, applyEditAction, mapAction
     , deleteAction
     , viewTextEditable, viewTextStatic
     , viewComments
@@ -30,8 +30,8 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 ## State and updating
 
-@docs State, initState, focusState
-@docs EditAction, update, mapAction
+@docs State, initState, focusState, Msg, update, mapMsg
+@docs EditAction, applyEditAction, mapAction
 @docs deleteAction
 
 
@@ -72,7 +72,7 @@ The `path` for a single value would simply be `()`.
 -}
 type Definition path data
     = Definition
-        { update : EditAction path -> data -> data
+        { applyEditAction : EditAction path -> data -> data
         , getString : path -> data -> Maybe String
         }
 
@@ -82,7 +82,7 @@ type Definition path data
 string : Definition () String
 string =
     Definition
-        { update =
+        { applyEditAction =
             \(EditAction () op) value ->
                 case op of
                     Edit text ->
@@ -99,7 +99,7 @@ string =
 int : Definition () Int
 int =
     Definition
-        { update =
+        { applyEditAction =
             \(EditAction () op) old ->
                 case op of
                     Edit text ->
@@ -118,14 +118,14 @@ int =
 list : Definition path data -> Definition (Maybe ( Int, Maybe path )) (List data)
 list itemDef =
     Definition
-        { update =
+        { applyEditAction =
             \action items ->
                 case action of
                     EditAction (Just ( index, Just p )) op ->
                         List.indexedMap
                             (\i item ->
                                 if i == index then
-                                    update itemDef (EditAction p op) item
+                                    applyEditAction itemDef (EditAction p op) item
 
                                 else
                                     item
@@ -181,17 +181,17 @@ object2 :
     -> Definition path data
 object2 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) =
     Definition
-        { update =
+        { applyEditAction =
             \(EditAction path op) data ->
                 case deconstructPath path of
                     Nothing ->
                         data
 
                     Just (OneOfTwo p1) ->
-                        put1 (update def1 (EditAction p1 op) (get1 data)) data
+                        put1 (applyEditAction def1 (EditAction p1 op) (get1 data)) data
 
                     Just (TwoOfTwo p2) ->
-                        put2 (update def2 (EditAction p2 op) (get2 data)) data
+                        put2 (applyEditAction def2 (EditAction p2 op) (get2 data)) data
         , getString =
             \path data ->
                 case deconstructPath path of
@@ -224,20 +224,20 @@ object3 :
     -> Definition path data
 object3 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) ( get3, put3, def3 ) =
     Definition
-        { update =
+        { applyEditAction =
             \(EditAction path op) data ->
                 case deconstructPath path of
                     Nothing ->
                         data
 
                     Just (OneOfThree p1) ->
-                        put1 (update def1 (EditAction p1 op) (get1 data)) data
+                        put1 (applyEditAction def1 (EditAction p1 op) (get1 data)) data
 
                     Just (TwoOfThree p2) ->
-                        put2 (update def2 (EditAction p2 op) (get2 data)) data
+                        put2 (applyEditAction def2 (EditAction p2 op) (get2 data)) data
 
                     Just (ThreeOfThree p3) ->
-                        put3 (update def3 (EditAction p3 op) (get3 data)) data
+                        put3 (applyEditAction def3 (EditAction p3 op) (get3 data)) data
         , getString =
             \path data ->
                 case deconstructPath path of
@@ -277,26 +277,26 @@ object5 :
     -> Definition path data
 object5 deconstructPath ( get1, put1, def1 ) ( get2, put2, def2 ) ( get3, put3, def3 ) ( get4, put4, def4 ) ( get5, put5, def5 ) =
     Definition
-        { update =
+        { applyEditAction =
             \(EditAction path op) data ->
                 case deconstructPath path of
                     Nothing ->
                         data
 
                     Just (OneOfFive p1) ->
-                        put1 (update def1 (EditAction p1 op) (get1 data)) data
+                        put1 (applyEditAction def1 (EditAction p1 op) (get1 data)) data
 
                     Just (TwoOfFive p2) ->
-                        put2 (update def2 (EditAction p2 op) (get2 data)) data
+                        put2 (applyEditAction def2 (EditAction p2 op) (get2 data)) data
 
                     Just (ThreeOfFive p3) ->
-                        put3 (update def3 (EditAction p3 op) (get3 data)) data
+                        put3 (applyEditAction def3 (EditAction p3 op) (get3 data)) data
 
                     Just (FourOfFive p4) ->
-                        put4 (update def4 (EditAction p4 op) (get4 data)) data
+                        put4 (applyEditAction def4 (EditAction p4 op) (get4 data)) data
 
                     Just (FiveOfFive p5) ->
-                        put5 (update def5 (EditAction p5 op) (get5 data)) data
+                        put5 (applyEditAction def5 (EditAction p5 op) (get5 data)) data
         , getString =
             \path data ->
                 case deconstructPath path of
@@ -385,11 +385,37 @@ mapAction f (EditAction path op) =
     EditAction (f path) op
 
 
+{-| Msgs that can affect the toolkit's `State`, which can be processes with [`update`](#update).
+-}
+type Msg path
+    = EditActionMsg (EditAction path)
+
+
+{-| Transform a `Msg` to operate on a larger data structure.
+-}
+mapMsg : (path1 -> path) -> Msg path1 -> Msg path
+mapMsg f msg =
+    case msg of
+        EditActionMsg action ->
+            EditActionMsg (mapAction f action)
+
+
 {-| Apply an `EditAction` to a data structure.
 -}
-update : Definition path data -> EditAction path -> data -> data
-update (Definition definition) action data =
-    definition.update action data
+applyEditAction : Definition path data -> EditAction path -> data -> data
+applyEditAction (Definition definition) action data =
+    definition.applyEditAction action data
+
+
+{-| Apply a [`Msg`](#Msg) to a data structure and a [`State`](#State).
+-}
+update : Definition path data -> Msg path -> State path -> data -> ( data, State path )
+update definition msg state data =
+    case msg of
+        EditActionMsg editAction ->
+            ( applyEditAction definition editAction data
+            , state
+            )
 
 
 getString : Definition path data -> path -> data -> Maybe String
@@ -424,7 +450,7 @@ viewTextStatic definition path data =
 
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
 -}
-viewTextEditable : Definition path data -> State path -> path -> data -> Html (EditAction path)
+viewTextEditable : Definition path data -> State path -> path -> data -> Html (Msg path)
 viewTextEditable definition state path data =
     case getString definition path data of
         Nothing ->
@@ -462,7 +488,7 @@ viewTextEditable definition state path data =
                   , viewComments state path
                   )
                 ]
-                |> Html.map (Edit >> EditAction path)
+                |> Html.map (Edit >> EditAction path >> EditActionMsg)
 
 
 {-| Displays the comments thread (and comments editor) for the given path.
