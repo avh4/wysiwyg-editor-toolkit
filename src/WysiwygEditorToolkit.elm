@@ -52,9 +52,10 @@ import Comments exposing (Comment)
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes exposing (attribute, src, style)
-import Html.Events
+import Html.Events exposing (onClick, onInput)
 import Html.Keyed
 import Json.Decode
+import Time
 
 
 {-| A `Definition` represents a set of editing operations that can be applied to
@@ -389,6 +390,7 @@ mapAction f (EditAction path op) =
 -}
 type Msg path
     = EditActionMsg (EditAction path)
+    | CommentsMsg path CommentsMsg
 
 
 {-| Transform a `Msg` to operate on a larger data structure.
@@ -398,6 +400,9 @@ mapMsg f msg =
     case msg of
         EditActionMsg action ->
             EditActionMsg (mapAction f action)
+
+        CommentsMsg path m ->
+            CommentsMsg (f path) m
 
 
 {-| Apply an `EditAction` to a data structure.
@@ -410,11 +415,48 @@ applyEditAction (Definition definition) action data =
 {-| Apply a [`Msg`](#Msg) to a data structure and a [`State`](#State).
 -}
 update : Definition path data -> Msg path -> State path -> data -> ( data, State path )
-update definition msg state data =
+update definition msg (State state) data =
     case msg of
         EditActionMsg editAction ->
             ( applyEditAction definition editAction data
-            , state
+            , State state
+            )
+
+        CommentsMsg path (DraftCommentChanged text) ->
+            ( data
+            , State
+                { state
+                    | unsavedComments = Dict.insert (state.pathToString path) text state.unsavedComments
+                }
+            )
+
+        CommentsMsg path SubmitDraftComment ->
+            ( data
+            , State
+                { state
+                    | unsavedComments = Dict.remove (state.pathToString path) state.unsavedComments
+                    , comments =
+                        Dict.update (state.pathToString path)
+                            (\cs ->
+                                Just
+                                    (Maybe.withDefault [] cs
+                                        ++ [ { content =
+                                                Dict.get (state.pathToString path) state.unsavedComments
+                                                    |> Maybe.withDefault ""
+
+                                             -- TODO: don't allow save when empty?
+                                             , author =
+                                                { name = "Me"
+                                                , avatar = "https://www.gravatar.com/avatar/efea31954f2beebc519db61ea21bea28"
+                                                }
+                                             , createdAt = Time.millisToPosix 900000000 -- TODO: use now
+                                             }
+                                           ]
+                                    )
+                            )
+                            state.comments
+                }
+              -- TODO: produce some kind of effect that the caller can handle
             )
 
 
@@ -483,12 +525,17 @@ viewTextEditable definition state path data =
                             ]
                             [ Html.text text ]
                         ]
+                        |> Html.map (Edit >> EditAction path >> EditActionMsg)
                   )
                 , ( "comments"
                   , viewComments state path
                   )
                 ]
-                |> Html.map (Edit >> EditAction path >> EditActionMsg)
+
+
+type CommentsMsg
+    = DraftCommentChanged String
+    | SubmitDraftComment
 
 
 {-| Displays the comments thread (and comments editor) for the given path.
@@ -498,7 +545,7 @@ this automatically, so you only need to use this for paths in your data that
 don't have a more specific editor view.)
 
 -}
-viewComments : State path -> path -> Html msg
+viewComments : State path -> path -> Html (Msg path)
 viewComments (State state) path =
     let
         pathString =
@@ -540,10 +587,17 @@ viewComments (State state) path =
                             [ style "border" "none"
                             , style "background" "transparent"
                             , style "width" "100%"
+                            , onInput DraftCommentChanged
                             ]
                             [ Html.text unsavedComment
                             ]
+                        , Html.button
+                            [ onClick SubmitDraftComment
+                            ]
+                            [ Html.text "Send"
+                            ]
                         ]
+                        |> Html.map (CommentsMsg path)
                   ]
                 ]
 
@@ -570,7 +624,8 @@ viewComment comment =
         , Html.div
             [ style "grid-area" "1/3"
             ]
-            [ Html.text "1 day ago" ]
+            [ Html.text "1 day ago" -- TODO: use createdAt
+            ]
         , Html.div
             [ style "grid-area" "2/2/-1/-1"
             ]

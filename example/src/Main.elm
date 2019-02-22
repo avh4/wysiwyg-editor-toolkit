@@ -168,6 +168,8 @@ view model =
         , pricingSummaryView model.renderingMode model.toolkitState model.editorData
         , Html.hr [] []
         , Html.code [] [ Html.text (Debug.toString model.editorData) ]
+        , Html.hr [] []
+        , Html.code [] [ Html.text (Debug.toString model.toolkitState) ]
         ]
     }
 
@@ -347,6 +349,7 @@ pricingSummaryView renderingMode state summary =
                 |> addButton
                 |> div [ class "card-deck mb-3 text-center" ]
             , Toolkit.viewComments state (Plans Nothing)
+                |> Html.map ToolkitMsg
             ]
         ]
 
@@ -411,6 +414,8 @@ viewPricingPlanCard renderingMode state parentPath pricingPlan =
                     |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features (Just i)) ])
                     |> ul [ class "list-unstyled mt-3 mb-4" ]
                 , Toolkit.viewComments state (Features Nothing)
+                    |> Html.map (Toolkit.mapMsg (Just >> parentPath))
+                    |> Html.map ToolkitMsg
                 ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
