@@ -56,7 +56,7 @@ import Comments exposing (Comment)
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes exposing (attribute, src, style)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, onMouseEnter, onMouseLeave)
 import Html.Keyed
 import Json.Decode
 import Time
@@ -345,6 +345,7 @@ type State path
         , comments : Dict String (List Comment)
         , unsavedComments : Dict String String
         , focusedCommentThread : Maybe String
+        , hoveredCommentThread : Maybe String
         }
 
 
@@ -360,6 +361,7 @@ initState pathToString comments =
                 |> List.foldl (\( path, comment ) -> Dict.update path (\cs -> Just (Maybe.withDefault [] cs ++ [ comment ]))) Dict.empty
         , unsavedComments = Dict.empty
         , focusedCommentThread = Nothing
+        , hoveredCommentThread = Nothing
         }
 
 
@@ -372,6 +374,7 @@ focusState mapPath (State state) =
         , comments = state.comments
         , unsavedComments = state.unsavedComments
         , focusedCommentThread = state.focusedCommentThread
+        , hoveredCommentThread = state.hoveredCommentThread
         }
 
 
@@ -410,6 +413,7 @@ type Msg path
     | CommentsMsg path CommentsMsg
     | CreateCommentResponse path (Result () Comment)
     | FocusComment path
+    | HoverCommentThread (Maybe path)
 
 
 {-| Gives UI focus to the comment thread at the given path.
@@ -436,6 +440,9 @@ mapMsg f msg =
 
         FocusComment path ->
             FocusComment (f path)
+
+        HoverCommentThread path ->
+            HoverCommentThread (Maybe.map f path)
 
 
 {-| Apply an `EditAction` to a data structure.
@@ -516,6 +523,12 @@ update definition msg (State state) data =
         FocusComment path ->
             ( data
             , State { state | focusedCommentThread = Just (state.pathToString path) }
+            , Nothing
+            )
+
+        HoverCommentThread path ->
+            ( data
+            , State { state | hoveredCommentThread = Maybe.map state.pathToString path }
             , Nothing
             )
 
@@ -621,6 +634,9 @@ viewComments (State state) path =
 
         isFocused =
             state.focusedCommentThread == Just pathString
+
+        isHovered =
+            state.hoveredCommentThread == Just pathString
     in
     if isFocused then
         Html.div
@@ -633,7 +649,7 @@ viewComments (State state) path =
             , style "border-radius" "5px"
             , style "border" "2px solid palevioletred"
             , style "opacity" "0.9"
-            , style "z-index" "100"
+            , style "z-index" "102"
             ]
         <|
             List.concat
@@ -668,16 +684,33 @@ viewComments (State state) path =
         Html.div
             [ style "position" "absolute"
             , style "font-size" "10px"
-            , style "background" "transparent"
+            , style "background" <|
+                if isHovered then
+                    "pink"
+
+                else
+                    "transparent"
             , style "top" "0px"
             , style "left" "100%"
             , style "width" "250px"
             , style "border-radius" "5px"
-            , style "border" "2px solid transparent"
+            , style "border" <|
+                if isHovered then
+                    "2px solid palevioletred"
+
+                else
+                    "2px solid transparent"
             , style "opacity" "0.7"
-            , style "z-index" "100"
+            , style "z-index" <|
+                if isHovered then
+                    "101"
+
+                else
+                    "100"
             , style "cursor" "pointer"
             , onClick (FocusComment path)
+            , onMouseEnter (HoverCommentThread (Just path))
+            , onMouseLeave (HoverCommentThread Nothing)
             ]
         <|
             List.concat
