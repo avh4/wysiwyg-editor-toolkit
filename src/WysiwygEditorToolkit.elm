@@ -622,10 +622,7 @@ viewComments (State state) path =
         isFocused =
             state.focusedCommentThread == Just pathString
     in
-    if List.isEmpty comments && String.trim unsavedComment == "" && not isFocused then
-        Html.text ""
-
-    else
+    if isFocused then
         Html.div
             [ style "position" "absolute"
             , style "font-size" "10px"
@@ -659,6 +656,57 @@ viewComments (State state) path =
                             ]
                             [ Html.text "Send"
                             ]
+                        ]
+                        |> Html.map (CommentsMsg path)
+                  ]
+                ]
+
+    else if List.isEmpty comments && String.trim unsavedComment == "" then
+        Html.text ""
+
+    else
+        Html.div
+            [ style "position" "absolute"
+            , style "font-size" "10px"
+            , style "background" "transparent"
+            , style "top" "0px"
+            , style "left" "100%"
+            , style "width" "250px"
+            , style "border-radius" "5px"
+            , style "border" "2px solid transparent"
+            , style "opacity" "0.7"
+            , style "z-index" "100"
+            , style "cursor" "pointer"
+            , onClick (FocusComment path)
+            ]
+        <|
+            List.concat
+                [ case comments of
+                    [] ->
+                        []
+
+                    [ single ] ->
+                        [ viewComment single ]
+
+                    [ first, second ] ->
+                        [ viewComment first
+                        , viewComment second
+                        ]
+
+                    first :: _ ->
+                        [ viewComment first
+                        , Html.text ("... " ++ String.fromInt (List.length comments - 2) ++ " comments ...")
+                        , comments
+                            |> List.reverse
+                            |> List.head
+                            |> Maybe.map viewComment
+                            |> Maybe.withDefault (Html.text "")
+                        ]
+                , [ Html.div
+                        [ style "border-top" "2px solid transparent"
+                        , style "padding" "10px"
+                        ]
+                        [ Html.text unsavedComment
                         ]
                         |> Html.map (CommentsMsg path)
                   ]
