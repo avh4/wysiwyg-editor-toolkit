@@ -4,6 +4,7 @@ module WysiwygEditorToolkit exposing
     , empty
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
     , State, initState, focusState, Msg, Effect(..), update, mapMsg
+    , focusCommentThread
     , EditAction, applyEditAction, mapAction
     , deleteAction
     , viewTextEditable, viewTextStatic
@@ -33,6 +34,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 ## State and updating
 
 @docs State, initState, focusState, Msg, Effect, update, mapMsg
+@docs focusCommentThread
 @docs EditAction, applyEditAction, mapAction
 @docs deleteAction
 
@@ -342,6 +344,7 @@ type State path
         { pathToString : path -> String
         , comments : Dict String (List Comment)
         , unsavedComments : Dict String String
+        , focusedCommentThread : Maybe String
         }
 
 
@@ -356,6 +359,7 @@ initState pathToString comments =
                 |> List.map (Tuple.mapFirst pathToString)
                 |> List.foldl (\( path, comment ) -> Dict.update path (\cs -> Just (Maybe.withDefault [] cs ++ [ comment ]))) Dict.empty
         , unsavedComments = Dict.empty
+        , focusedCommentThread = Nothing
         }
 
 
@@ -367,6 +371,7 @@ focusState mapPath (State state) =
         { pathToString = mapPath >> state.pathToString
         , comments = state.comments
         , unsavedComments = state.unsavedComments
+        , focusedCommentThread = state.focusedCommentThread
         }
 
 
@@ -404,6 +409,15 @@ type Msg path
     = EditActionMsg (EditAction path)
     | CommentsMsg path CommentsMsg
     | CreateCommentResponse path (Result () Comment)
+    | FocusComment path
+
+
+{-| Gives UI focus to the comment thread at the given path.
+Notably, this will make the comment UI appear for a path for which no comments currently exist.
+-}
+focusCommentThread : path -> Msg path
+focusCommentThread path =
+    FocusComment path
 
 
 {-| Transform a `Msg` to operate on a larger data structure.
@@ -419,6 +433,9 @@ mapMsg f msg =
 
         CreateCommentResponse path result ->
             CreateCommentResponse (f path) result
+
+        FocusComment path ->
+            FocusComment (f path)
 
 
 {-| Apply an `EditAction` to a data structure.
@@ -493,6 +510,12 @@ update definition msg (State state) data =
             -- TODO: note the error and put back the unsaved comment
             ( data
             , State state
+            , Nothing
+            )
+
+        FocusComment path ->
+            ( data
+            , State { state | focusedCommentThread = Just (state.pathToString path) }
             , Nothing
             )
 
@@ -595,8 +618,11 @@ viewComments (State state) path =
         unsavedComment =
             Dict.get pathString state.unsavedComments
                 |> Maybe.withDefault ""
+
+        isFocused =
+            state.focusedCommentThread == Just pathString
     in
-    if List.isEmpty comments then
+    if List.isEmpty comments && String.trim unsavedComment == "" && not isFocused then
         Html.text ""
 
     else
