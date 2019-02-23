@@ -88,8 +88,11 @@ update msg model =
 
         ToolkitMsg toolkitMsg ->
             let
-                ( newData, newState ) =
+                ( newData, newState, effect ) =
                     Toolkit.update pricingSummaryDefinition toolkitMsg model.toolkitState model.editorData
+
+                _ =
+                    Debug.log "Toolkit.Effect" effect
             in
             ( { model
                 | editorData = newData

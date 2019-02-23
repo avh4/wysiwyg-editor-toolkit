@@ -3,7 +3,7 @@ module WysiwygEditorToolkit exposing
     , string, int, list
     , empty
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
-    , State, initState, focusState, Msg, update, mapMsg
+    , State, initState, focusState, Msg, Effect(..), update, mapMsg
     , EditAction, applyEditAction, mapAction
     , deleteAction
     , viewTextEditable, viewTextStatic
@@ -32,7 +32,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 ## State and updating
 
-@docs State, initState, focusState, Msg, update, mapMsg
+@docs State, initState, focusState, Msg, Effect, update, mapMsg
 @docs EditAction, applyEditAction, mapAction
 @docs deleteAction
 
@@ -403,6 +403,7 @@ mapAction f (EditAction path op) =
 type Msg path
     = EditActionMsg (EditAction path)
     | CommentsMsg path CommentsMsg
+    | CreateCommentResponse path (Result () Comment)
 
 
 {-| Transform a `Msg` to operate on a larger data structure.
@@ -416,6 +417,9 @@ mapMsg f msg =
         CommentsMsg path m ->
             CommentsMsg (f path) m
 
+        CreateCommentResponse path result ->
+            CreateCommentResponse (f path) result
+
 
 {-| Apply an `EditAction` to a data structure.
 -}
@@ -424,14 +428,21 @@ applyEditAction (Definition definition) action data =
     definition.applyEditAction action data
 
 
+{-| Effects that [`update`](#update) can ask you to perform on the toolkit's behalf.
+-}
+type Effect path
+    = CreateComment path String (Result () Comment -> Msg path)
+
+
 {-| Apply a [`Msg`](#Msg) to a data structure and a [`State`](#State).
 -}
-update : Definition path data -> Msg path -> State path -> data -> ( data, State path )
+update : Definition path data -> Msg path -> State path -> data -> ( data, State path, Maybe (Effect path) )
 update definition msg (State state) data =
     case msg of
         EditActionMsg editAction ->
             ( applyEditAction definition editAction data
             , State state
+            , Nothing
             )
 
         CommentsMsg path (DraftCommentChanged text) ->
@@ -440,9 +451,27 @@ update definition msg (State state) data =
                 { state
                     | unsavedComments = Dict.insert (state.pathToString path) text state.unsavedComments
                 }
+            , Nothing
             )
 
         CommentsMsg path SubmitDraftComment ->
+            let
+                newComment =
+                    Dict.get (state.pathToString path) state.unsavedComments
+                        |> Maybe.withDefault ""
+            in
+            if String.trim newComment == "" then
+                -- Don't save blank comments
+                ( data, State state, Nothing )
+
+            else
+                ( data
+                , State state
+                  -- TODO: mark the comment as saving
+                , Just (CreateComment path newComment (CreateCommentResponse path))
+                )
+
+        CreateCommentResponse path (Ok newComment) ->
             ( data
             , State
                 { state
@@ -452,23 +481,19 @@ update definition msg (State state) data =
                             (\cs ->
                                 Just
                                     (Maybe.withDefault [] cs
-                                        ++ [ { content =
-                                                Dict.get (state.pathToString path) state.unsavedComments
-                                                    |> Maybe.withDefault ""
-
-                                             -- TODO: don't allow save when empty?
-                                             , author =
-                                                { name = "Me"
-                                                , avatar = "https://www.gravatar.com/avatar/efea31954f2beebc519db61ea21bea28"
-                                                }
-                                             , createdAt = Time.millisToPosix 900000000 -- TODO: use now
-                                             }
-                                           ]
+                                        ++ [ newComment ]
                                     )
                             )
                             state.comments
                 }
-              -- TODO: produce some kind of effect that the caller can handle
+            , Nothing
+            )
+
+        CreateCommentResponse path (Err ()) ->
+            -- TODO: note the error and put back the unsaved comment
+            ( data
+            , State state
+            , Nothing
             )
 
 

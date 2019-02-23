@@ -100,28 +100,28 @@ start :
     Toolkit.Definition path data
     -> (Toolkit.Definition path data -> data -> Html (Toolkit.Msg path))
     -> data
-    -> TestContext (Msg path) (Model path data) ()
+    -> TestContext (Msg path) (Model path data) (Maybe (Toolkit.Effect path))
 start definition testView init =
     TestContext.create
         { init =
             ( { toolkitState = Toolkit.initState Debug.toString []
               , editorData = init
               }
-            , ()
+            , Nothing
             )
         , update =
             \msg model ->
                 case msg of
                     ToolkitMsg toolkitMsg ->
                         let
-                            ( newData, newState ) =
+                            ( newData, newState, effect ) =
                                 Toolkit.update definition toolkitMsg model.toolkitState model.editorData
                         in
                         ( { model
                             | editorData = newData
                             , toolkitState = newState
                           }
-                        , ()
+                        , effect
                         )
         , view =
             \model ->
