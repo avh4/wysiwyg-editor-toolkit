@@ -38,29 +38,28 @@ initialModel =
                     }
             in
             [ ( Title
-              , [ { content = "Maybe \"Plans for Everyone\"?"
-                  , author = quest
-                  , createdAt = Time.millisToPosix 0
-                  }
-                ]
+              , { content = "Maybe \"Plans for Everyone\"?"
+                , author = quest
+                , createdAt = Time.millisToPosix 0
+                }
               )
             , ( Plans (Just ( 1, Just (Features Nothing) ))
-              , [ { content = "Can we add one more item here?"
-                  , author = west
-                  , createdAt = Time.millisToPosix 250000000
-                  }
-                ]
+              , { content = "Can we add one more item here?"
+                , author = west
+                , createdAt = Time.millisToPosix 250000000
+                }
               )
             , ( Plans (Just ( 2, Just PriceUsd ))
-              , [ { content = "Are the price changes happening next month?"
-                  , author = quest
-                  , createdAt = Time.millisToPosix 100000000
-                  }
-                , { content = "changes aren't finalized yet"
-                  , author = west
-                  , createdAt = Time.millisToPosix 200000000
-                  }
-                ]
+              , { content = "Are the price changes happening next month?"
+                , author = quest
+                , createdAt = Time.millisToPosix 100000000
+                }
+              )
+            , ( Plans (Just ( 2, Just PriceUsd ))
+              , { content = "changes aren't finalized yet"
+                , author = west
+                , createdAt = Time.millisToPosix 200000000
+                }
               )
             ]
     , renderingMode = Editable

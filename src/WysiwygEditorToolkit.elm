@@ -347,14 +347,14 @@ type State path
 
 {-| Creates an initial toolkit State. See [`State`](#State).
 -}
-initState : (path -> String) -> List ( path, List Comment ) -> State path
+initState : (path -> String) -> List ( path, Comment ) -> State path
 initState pathToString comments =
     State
         { pathToString = pathToString
         , comments =
             comments
                 |> List.map (Tuple.mapFirst pathToString)
-                |> Dict.fromList
+                |> List.foldl (\( path, comment ) -> Dict.update path (\cs -> Just (Maybe.withDefault [] cs ++ [ comment ]))) Dict.empty
         , unsavedComments = Dict.empty
         }
 
