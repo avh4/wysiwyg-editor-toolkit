@@ -1,6 +1,7 @@
 module WysiwygEditorToolkit exposing
     ( Definition
     , string, int, list
+    , empty
     , OfTwo(..), OfThree(..), OfFive(..), object2, object3, object5
     , State, initState, focusState, Msg, update, mapMsg
     , EditAction, applyEditAction, mapAction
@@ -25,6 +26,7 @@ for your UIs. Each view function in this module is part of a set of functions--a
 
 ### Complex definitions
 
+@docs empty
 @docs OfTwo, OfThree, OfFive, object2, object3, object5
 
 
@@ -75,6 +77,16 @@ type Definition path data
     = Definition
         { applyEditAction : EditAction path -> data -> data
         , getString : path -> data -> Maybe String
+        }
+
+
+{-| The definition of an empty data structure
+-}
+empty : Definition path data
+empty =
+    Definition
+        { applyEditAction = \_ value -> value
+        , getString = \_ _ -> Nothing
         }
 
 
