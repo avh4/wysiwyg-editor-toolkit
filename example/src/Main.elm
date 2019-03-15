@@ -2,9 +2,11 @@ module Main exposing (main)
 
 import Browser
 import Dict
+import ExampleData
 import Html exposing (Html, a, button, div, h1, h4, h5, img, li, p, small, text, ul)
 import Html.Attributes exposing (alt, attribute, class, href, rel, src, style, type_, value)
 import Html.Events exposing (onClick)
+import PricingSummary exposing (PricingPlan, PricingSummary)
 import Time
 import WysiwygEditorToolkit as Toolkit exposing (OfThree(..), OfTwo(..))
 
@@ -23,7 +25,7 @@ type RenderingMode
 
 initialModel : Model
 initialModel =
-    { editorData = pricingSummary
+    { editorData = ExampleData.pricingSummary
     , toolkitState =
         Toolkit.initState Debug.toString <|
             let
@@ -186,13 +188,6 @@ main =
         }
 
 
-type alias PricingSummary =
-    { title : String
-    , intro : String
-    , plans : List PricingPlan
-    }
-
-
 type PricingSummaryPath
     = Title
     | Intro
@@ -216,17 +211,6 @@ pricingSummaryDefinition =
         ( .title, \x data -> { data | title = x }, Toolkit.string )
         ( .intro, \x data -> { data | intro = x }, Toolkit.string )
         ( .plans, \x data -> { data | plans = x }, Toolkit.list pricingPlanDefinition )
-
-
-type alias PricingPlan =
-    { name : String
-    , pricePerMonth :
-        { usd : Int
-        }
-    , features : List String
-    , callToAction : String
-    , callToActionOutline : Bool
-    }
 
 
 type PricingPlanPath
@@ -255,48 +239,6 @@ pricingPlanDefinition =
         ( .name, \x plan -> { plan | name = x }, Toolkit.string )
         ( .pricePerMonth >> .usd, \x plan -> { plan | pricePerMonth = { usd = x } }, Toolkit.int )
         ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
-
-
-pricingSummary : PricingSummary
-pricingSummary =
-    { title = "Pricing"
-    , intro = "Quickly build an effective pricing table for your potential customers with this Bootstrap example. It’s built with default Bootstrap components and utilities with little customization."
-    , plans =
-        [ { name = "Free"
-          , pricePerMonth = { usd = 0 }
-          , features =
-                [ "10 users included"
-                , "2 GB of storage"
-                , "Email support"
-                , "Help center access"
-                ]
-          , callToAction = "Sign up for free"
-          , callToActionOutline = True
-          }
-        , { name = "Pro"
-          , pricePerMonth = { usd = 15 }
-          , features =
-                [ "20 users included"
-                , "10 GB of storage"
-                , "Priority email support"
-                , "Help center access"
-                ]
-          , callToAction = "Get started"
-          , callToActionOutline = False
-          }
-        , { name = "Enterprise"
-          , pricePerMonth = { usd = 29 }
-          , features =
-                [ "30 users included"
-                , "15 GB of storage"
-                , "Phone and email support"
-                , "Help center access"
-                ]
-          , callToAction = "Contact us"
-          , callToActionOutline = False
-          }
-        ]
-    }
 
 
 pricingSummaryView : RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
