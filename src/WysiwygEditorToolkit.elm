@@ -794,6 +794,7 @@ and for content editors (by giving it a [`wysiwygRenderingWithComments`](#wysiwy
 -}
 type alias Rendering path msg =
     { text : path -> Html msg
+    , comments : path -> Html msg
     , withDelete : path -> (List (Html msg) -> Html msg) -> List (Html msg) -> Html msg
     }
 
@@ -805,6 +806,7 @@ You can use this in your production user-facing pages.
 staticRendering : Definition path data -> data -> Rendering path msg
 staticRendering definition data =
     { text = \path -> viewTextStatic definition path data
+    , comments = \_ -> Html.text ""
     , withDelete = \_ container children -> container children
     }
 
@@ -812,10 +814,8 @@ staticRendering definition data =
 {-| -}
 wysiwygRenderingWithComments : (Msg path -> msg) -> Definition path data -> State path -> data -> Rendering path msg
 wysiwygRenderingWithComments toMsg definition state data =
-    { text =
-        \path ->
-            viewTextEditable definition state path data
-                |> Html.map toMsg
+    { text = \path -> Html.map toMsg (viewTextEditable definition state path data)
+    , comments = \path -> Html.map toMsg (viewComments state path)
     , withDelete =
         \path container children ->
             let
@@ -842,5 +842,6 @@ wysiwygRenderingWithComments toMsg definition state data =
 focusRendering : (path1 -> path) -> Rendering path msg -> Rendering path1 msg
 focusRendering f render =
     { text = \p1 -> render.text (f p1)
+    , comments = \p1 -> render.comments (f p1)
     , withDelete = \p1 -> render.withDelete (f p1)
     }

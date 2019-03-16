@@ -178,7 +178,7 @@ view model =
                     ]
         , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
         , Html.hr [] []
-        , pricingSummaryView render model.renderingMode model.toolkitState model.editorData
+        , pricingSummaryView render model.renderingMode model.editorData
         , Html.hr [] []
         , Html.code [] [ Html.text (Debug.toString model.editorData) ]
         , Html.hr [] []
@@ -250,8 +250,8 @@ pricingPlanDefinition =
         ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
 
 
-pricingSummaryView : Rendering PricingSummaryPath Msg -> RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
-pricingSummaryView render renderingMode state summary =
+pricingSummaryView : Rendering PricingSummaryPath Msg -> RenderingMode -> PricingSummary -> Html Msg
+pricingSummaryView render renderingMode summary =
     let
         withAddButton container children =
             case renderingMode of
@@ -289,19 +289,16 @@ pricingSummaryView render renderingMode state summary =
                     (\i plan ->
                         viewPricingPlanCard
                             (Toolkit.focusRendering (\p -> Plans (Just ( i, p ))) render)
-                            (Toolkit.focusState (\p -> Plans (Just ( i, Just p ))) state)
-                            (\p -> Plans (Just ( i, p )))
                             plan
                     )
                 |> withAddButton (div [ class "card-deck mb-3 text-center" ])
-            , Toolkit.viewComments state (Plans Nothing)
-                |> Html.map ToolkitMsg
+            , render.comments (Plans Nothing)
             ]
         ]
 
 
-viewPricingPlanCard : Rendering (Maybe PricingPlanPath) Msg -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
-viewPricingPlanCard render state parentPath pricingPlan =
+viewPricingPlanCard : Rendering (Maybe PricingPlanPath) Msg -> PricingPlan -> Html Msg
+viewPricingPlanCard render pricingPlan =
     let
         buttonClass =
             if pricingPlan.callToActionOutline then
@@ -328,9 +325,7 @@ viewPricingPlanCard render state parentPath pricingPlan =
                 [ pricingPlan.features
                     |> List.indexedMap (\i feature -> li [] [ render.text (Just (Features (Just i))) ])
                     |> ul [ class "list-unstyled mt-3 mb-4" ]
-                , Toolkit.viewComments state (Features Nothing)
-                    |> Html.map (Toolkit.mapMsg (Just >> parentPath))
-                    |> Html.map ToolkitMsg
+                , render.comments (Just (Features Nothing))
                 ]
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
