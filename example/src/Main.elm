@@ -253,14 +253,15 @@ pricingPlanDefinition =
 pricingSummaryView : Rendering PricingSummaryPath Msg -> RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
 pricingSummaryView render renderingMode state summary =
     let
-        addButton children =
+        withAddButton container children =
             case renderingMode of
                 Static ->
-                    children
+                    container children
 
                 Editable ->
-                    children
-                        ++ [ Html.button
+                    let
+                        addButton =
+                            Html.button
                                 [ style "position" "absolute"
                                 , style "flex-grow" "1"
                                 , style "bottom" "5px"
@@ -272,7 +273,8 @@ pricingSummaryView render renderingMode state summary =
                                 , onClick (Add (Plans Nothing))
                                 ]
                                 [ Html.text "Add" ]
-                           ]
+                    in
+                    container (children ++ [ addButton ])
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
@@ -292,8 +294,7 @@ pricingSummaryView render renderingMode state summary =
                             (\p -> Plans (Just ( i, p )))
                             plan
                     )
-                |> addButton
-                |> div [ class "card-deck mb-3 text-center" ]
+                |> withAddButton (div [ class "card-deck mb-3 text-center" ])
             , Toolkit.viewComments state (Plans Nothing)
                 |> Html.map ToolkitMsg
             ]
@@ -303,14 +304,15 @@ pricingSummaryView render renderingMode state summary =
 viewPricingPlanCard : Rendering PricingPlanPath Msg -> RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
 viewPricingPlanCard render renderingMode state parentPath pricingPlan =
     let
-        addButton children =
+        withDelete container children =
             case renderingMode of
                 Static ->
-                    children
+                    container children
 
                 Editable ->
-                    children
-                        ++ [ Html.button
+                    let
+                        deleteButton =
+                            Html.button
                                 [ style "position" "absolute"
                                 , style "flex-grow" "1"
                                 , style "top" "5px"
@@ -323,7 +325,8 @@ viewPricingPlanCard render renderingMode state parentPath pricingPlan =
                                 ]
                                 [ Html.text "Delete" ]
                                 |> Html.map ToolkitAction
-                           ]
+                    in
+                    container (children ++ [ deleteButton ])
 
         buttonClass =
             if pricingPlan.callToActionOutline then
@@ -332,11 +335,11 @@ viewPricingPlanCard render renderingMode state parentPath pricingPlan =
             else
                 "btn-primary"
     in
-    div [ class "card mb-4 shadow-sm" ]
-        ([ div [ class "card-header" ]
+    withDelete (div [ class "card mb-4 shadow-sm" ])
+        [ div [ class "card-header" ]
             [ h4 [ class "my-0 font-weight-normal" ] [ render.text Name ]
             ]
-         , div [ class "card-body" ]
+        , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
                 , render.text PriceUsd
@@ -356,6 +359,4 @@ viewPricingPlanCard render renderingMode state parentPath pricingPlan =
             , button [ class "btn btn-lg btn-block", class buttonClass, type_ "button" ]
                 [ text pricingPlan.callToAction ]
             ]
-         ]
-            |> addButton
-        )
+        ]
