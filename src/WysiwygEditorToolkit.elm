@@ -9,6 +9,8 @@ module WysiwygEditorToolkit exposing
     , deleteAction
     , viewTextEditable, viewTextStatic
     , viewComments
+    , Rendering, focusRendering
+    , staticRendering, wysiwygRenderingWithComments
     )
 
 {-| WysiwygEditorToolkit gives you tools to create "what-you-see-is-what-you-get" (WYSIWYG) editors
@@ -49,6 +51,12 @@ for your UIs. Each view function in this module is part of a set of functions--a
 Comments are automatically displayed when using other editing widgets (like [`viewTextEditable`](#viewTextEditable)), but you can also add them manually for paths that do not correspond to other edigint widgets.
 
 @docs viewComments
+
+
+## Rendering
+
+@docs Rendering, focusRendering
+@docs staticRendering, wysiwygRenderingWithComments
 
 -}
 
@@ -775,3 +783,43 @@ viewComment comment =
             ]
             [ Html.text comment.content ]
         ]
+
+
+{-| A `Rendering` represents the configuration of how to render data.
+
+If you write a view that takes a `Rendering` as input, then the view can be used both for
+production, user-facing pages (by giving it a [`staticRendering`](#staticRendering)),
+and for content editors (by giving it a [`wysiwygRenderingWithComments`](#wysiwygRenderingWithComments)).
+
+-}
+type alias Rendering path msg =
+    { text : path -> Html msg
+    }
+
+
+{-| This is the simplest [`Rendering`](#Rendering), and it simply renders data as plain HTML with
+no interactive editing or commenting controls.
+You can use this in your production user-facing pages.
+-}
+staticRendering : Definition path data -> data -> Rendering path msg
+staticRendering definition data =
+    { text = \path -> viewTextStatic definition path data
+    }
+
+
+{-| -}
+wysiwygRenderingWithComments : (Msg path -> msg) -> Definition path data -> State path -> data -> Rendering path msg
+wysiwygRenderingWithComments toMsg definition state data =
+    { text =
+        \path ->
+            viewTextEditable definition state path data
+                |> Html.map toMsg
+    }
+
+
+{-| Transform a `Rendering` that operates on a data structure into a `Rendering` that operates on a substructure of that data structure.
+-}
+focusRendering : (path1 -> path) -> Rendering path msg -> Rendering path1 msg
+focusRendering f render =
+    { text = \p1 -> render.text (f p1)
+    }

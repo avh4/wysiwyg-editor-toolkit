@@ -8,7 +8,7 @@ import Html.Attributes exposing (alt, attribute, class, href, rel, src, style, t
 import Html.Events exposing (onClick)
 import PricingSummary exposing (PricingPlan, PricingSummary)
 import Time
-import WysiwygEditorToolkit as Toolkit exposing (OfThree(..), OfTwo(..))
+import WysiwygEditorToolkit as Toolkit exposing (OfThree(..), OfTwo(..), Rendering)
 
 
 type alias Model =
@@ -157,17 +157,10 @@ view model =
         render =
             case model.renderingMode of
                 Static ->
-                    { text =
-                        \path ->
-                            Toolkit.viewTextStatic pricingSummaryDefinition path model.editorData
-                    }
+                    Toolkit.staticRendering pricingSummaryDefinition model.editorData
 
                 Editable ->
-                    { text =
-                        \path ->
-                            Toolkit.viewTextEditable pricingSummaryDefinition model.toolkitState path model.editorData
-                                |> Html.map ToolkitMsg
-                    }
+                    Toolkit.wysiwygRenderingWithComments ToolkitMsg pricingSummaryDefinition model.toolkitState model.editorData
     in
     { title = "avh4/wysiwyg-editor-toolkit demo"
     , body =
@@ -257,17 +250,6 @@ pricingPlanDefinition =
         ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
 
 
-type alias Rendering path msg =
-    { text : path -> Html msg
-    }
-
-
-mapRendering : (path1 -> path) -> Rendering path msg -> Rendering path1 msg
-mapRendering f render =
-    { text = \p1 -> render.text (f p1)
-    }
-
-
 pricingSummaryView : Rendering PricingSummaryPath Msg -> RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
 pricingSummaryView render renderingMode state summary =
     let
@@ -304,7 +286,7 @@ pricingSummaryView render renderingMode state summary =
                 |> List.indexedMap
                     (\i plan ->
                         viewPricingPlanCard
-                            (mapRendering (\p -> Plans (Just ( i, Just p ))) render)
+                            (Toolkit.focusRendering (\p -> Plans (Just ( i, Just p ))) render)
                             renderingMode
                             (Toolkit.focusState (\p -> Plans (Just ( i, Just p ))) state)
                             (\p -> Plans (Just ( i, p )))
