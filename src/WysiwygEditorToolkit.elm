@@ -794,6 +794,7 @@ and for content editors (by giving it a [`wysiwygRenderingWithComments`](#wysiwy
 -}
 type alias Rendering path msg =
     { text : path -> Html msg
+    , withDelete : path -> (List (Html msg) -> Html msg) -> List (Html msg) -> Html msg
     }
 
 
@@ -804,6 +805,7 @@ You can use this in your production user-facing pages.
 staticRendering : Definition path data -> data -> Rendering path msg
 staticRendering definition data =
     { text = \path -> viewTextStatic definition path data
+    , withDelete = \_ container children -> container children
     }
 
 
@@ -814,6 +816,24 @@ wysiwygRenderingWithComments toMsg definition state data =
         \path ->
             viewTextEditable definition state path data
                 |> Html.map toMsg
+    , withDelete =
+        \path container children ->
+            let
+                deleteButton =
+                    Html.button
+                        [ style "position" "absolute"
+                        , style "flex-grow" "1"
+                        , style "top" "5px"
+                        , style "right" "10px"
+                        , style "background-color" "pink"
+                        , style "opacity" "0.5"
+                        , style "padding" "5px 15px"
+                        , style "border-radius" "5px"
+                        , onClick (toMsg <| EditActionMsg <| deleteAction path)
+                        ]
+                        [ Html.text "Delete" ]
+            in
+            container (children ++ [ deleteButton ])
     }
 
 
@@ -822,4 +842,5 @@ wysiwygRenderingWithComments toMsg definition state data =
 focusRendering : (path1 -> path) -> Rendering path msg -> Rendering path1 msg
 focusRendering f render =
     { text = \p1 -> render.text (f p1)
+    , withDelete = \p1 -> render.withDelete (f p1)
     }

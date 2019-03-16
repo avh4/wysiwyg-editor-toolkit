@@ -288,7 +288,7 @@ pricingSummaryView render renderingMode state summary =
                 |> List.indexedMap
                     (\i plan ->
                         viewPricingPlanCard
-                            (Toolkit.focusRendering (\p -> Plans (Just ( i, Just p ))) render)
+                            (Toolkit.focusRendering (\p -> Plans (Just ( i, p ))) render)
                             renderingMode
                             (Toolkit.focusState (\p -> Plans (Just ( i, Just p ))) state)
                             (\p -> Plans (Just ( i, p )))
@@ -301,33 +301,9 @@ pricingSummaryView render renderingMode state summary =
         ]
 
 
-viewPricingPlanCard : Rendering PricingPlanPath Msg -> RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
+viewPricingPlanCard : Rendering (Maybe PricingPlanPath) Msg -> RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
 viewPricingPlanCard render renderingMode state parentPath pricingPlan =
     let
-        withDelete container children =
-            case renderingMode of
-                Static ->
-                    container children
-
-                Editable ->
-                    let
-                        deleteButton =
-                            Html.button
-                                [ style "position" "absolute"
-                                , style "flex-grow" "1"
-                                , style "top" "5px"
-                                , style "right" "10px"
-                                , style "background-color" "pink"
-                                , style "opacity" "0.5"
-                                , style "padding" "5px 15px"
-                                , style "border-radius" "5px"
-                                , onClick (Toolkit.deleteAction (parentPath Nothing))
-                                ]
-                                [ Html.text "Delete" ]
-                                |> Html.map ToolkitAction
-                    in
-                    container (children ++ [ deleteButton ])
-
         buttonClass =
             if pricingPlan.callToActionOutline then
                 "btn-outline-primary"
@@ -335,14 +311,15 @@ viewPricingPlanCard render renderingMode state parentPath pricingPlan =
             else
                 "btn-primary"
     in
-    withDelete (div [ class "card mb-4 shadow-sm" ])
+    render.withDelete Nothing
+        (div [ class "card mb-4 shadow-sm" ])
         [ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ render.text Name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ render.text (Just Name) ]
             ]
         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , render.text PriceUsd
+                , render.text (Just PriceUsd)
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
@@ -350,7 +327,7 @@ viewPricingPlanCard render renderingMode state parentPath pricingPlan =
                 [ style "position" "relative"
                 ]
                 [ pricingPlan.features
-                    |> List.indexedMap (\i feature -> li [] [ render.text (Features (Just i)) ])
+                    |> List.indexedMap (\i feature -> li [] [ render.text (Just (Features (Just i))) ])
                     |> ul [ class "list-unstyled mt-3 mb-4" ]
                 , Toolkit.viewComments state (Features Nothing)
                     |> Html.map (Toolkit.mapMsg (Just >> parentPath))
