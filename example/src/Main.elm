@@ -289,7 +289,6 @@ pricingSummaryView render renderingMode state summary =
                     (\i plan ->
                         viewPricingPlanCard
                             (Toolkit.focusRendering (\p -> Plans (Just ( i, p ))) render)
-                            renderingMode
                             (Toolkit.focusState (\p -> Plans (Just ( i, Just p ))) state)
                             (\p -> Plans (Just ( i, p )))
                             plan
@@ -301,8 +300,8 @@ pricingSummaryView render renderingMode state summary =
         ]
 
 
-viewPricingPlanCard : Rendering (Maybe PricingPlanPath) Msg -> RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
-viewPricingPlanCard render renderingMode state parentPath pricingPlan =
+viewPricingPlanCard : Rendering (Maybe PricingPlanPath) Msg -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
+viewPricingPlanCard render state parentPath pricingPlan =
     let
         buttonClass =
             if pricingPlan.callToActionOutline then
