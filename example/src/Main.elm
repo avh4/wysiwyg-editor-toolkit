@@ -153,6 +153,22 @@ applyDelete path data =
 
 view : Model -> Browser.Document Msg
 view model =
+    let
+        render =
+            case model.renderingMode of
+                Static ->
+                    { text =
+                        \path ->
+                            Toolkit.viewTextStatic pricingSummaryDefinition path model.editorData
+                    }
+
+                Editable ->
+                    { text =
+                        \path ->
+                            Toolkit.viewTextEditable pricingSummaryDefinition model.toolkitState path model.editorData
+                                |> Html.map ToolkitMsg
+                    }
+    in
     { title = "avh4/wysiwyg-editor-toolkit demo"
     , body =
         [ Html.h2 [] [ Html.text "avh4/wysiwyg-editor-toolkit demo" ]
@@ -169,7 +185,7 @@ view model =
                     ]
         , Html.p [] [ Html.text "(example is taken from https://getbootstrap.com/docs/4.3/examples/pricing/)" ]
         , Html.hr [] []
-        , pricingSummaryView model.renderingMode model.toolkitState model.editorData
+        , pricingSummaryView render model.renderingMode model.toolkitState model.editorData
         , Html.hr [] []
         , Html.code [] [ Html.text (Debug.toString model.editorData) ]
         , Html.hr [] []
@@ -241,18 +257,20 @@ pricingPlanDefinition =
         ( .features, \x plan -> { plan | features = x }, Toolkit.list Toolkit.string )
 
 
-pricingSummaryView : RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
-pricingSummaryView renderingMode state summary =
+type alias Rendering path msg =
+    { text : path -> Html msg
+    }
+
+
+mapRendering : (path1 -> path) -> Rendering path msg -> Rendering path1 msg
+mapRendering f render =
+    { text = \p1 -> render.text (f p1)
+    }
+
+
+pricingSummaryView : Rendering PricingSummaryPath Msg -> RenderingMode -> Toolkit.State PricingSummaryPath -> PricingSummary -> Html Msg
+pricingSummaryView render renderingMode state summary =
     let
-        viewOrEditText path =
-            case renderingMode of
-                Static ->
-                    Toolkit.viewTextStatic pricingSummaryDefinition path summary
-
-                Editable ->
-                    Toolkit.viewTextEditable pricingSummaryDefinition state path summary
-                        |> Html.map ToolkitMsg
-
         addButton children =
             case renderingMode of
                 Static ->
@@ -276,16 +294,18 @@ pricingSummaryView renderingMode state summary =
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ viewOrEditText Title ]
+            [ h1 [ class "display-4" ] [ render.text Title ]
             , p [ class "lead" ]
-                [ viewOrEditText Intro
+                [ render.text Intro
                 ]
             ]
         , div [ class "container" ]
             [ summary.plans
                 |> List.indexedMap
                     (\i plan ->
-                        viewPricingPlanCard renderingMode
+                        viewPricingPlanCard
+                            (mapRendering (\p -> Plans (Just ( i, Just p ))) render)
+                            renderingMode
                             (Toolkit.focusState (\p -> Plans (Just ( i, Just p ))) state)
                             (\p -> Plans (Just ( i, p )))
                             plan
@@ -298,19 +318,9 @@ pricingSummaryView renderingMode state summary =
         ]
 
 
-viewPricingPlanCard : RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
-viewPricingPlanCard renderingMode state parentPath pricingPlan =
+viewPricingPlanCard : Rendering PricingPlanPath Msg -> RenderingMode -> Toolkit.State PricingPlanPath -> (Maybe PricingPlanPath -> PricingSummaryPath) -> PricingPlan -> Html Msg
+viewPricingPlanCard render renderingMode state parentPath pricingPlan =
     let
-        viewOrEditText path =
-            case renderingMode of
-                Static ->
-                    Toolkit.viewTextStatic pricingPlanDefinition path pricingPlan
-
-                Editable ->
-                    Toolkit.viewTextEditable pricingPlanDefinition state path pricingPlan
-                        |> Html.map (Toolkit.mapMsg (Just >> parentPath))
-                        |> Html.map ToolkitMsg
-
         addButton children =
             case renderingMode of
                 Static ->
@@ -342,12 +352,12 @@ viewPricingPlanCard renderingMode state parentPath pricingPlan =
     in
     div [ class "card mb-4 shadow-sm" ]
         ([ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ viewOrEditText Name ]
+            [ h4 [ class "my-0 font-weight-normal" ] [ render.text Name ]
             ]
          , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
                 [ text "$"
-                , viewOrEditText PriceUsd
+                , render.text PriceUsd
                 , text " "
                 , small [ class "text-muted" ] [ text "/ mo" ]
                 ]
@@ -355,7 +365,7 @@ viewPricingPlanCard renderingMode state parentPath pricingPlan =
                 [ style "position" "relative"
                 ]
                 [ pricingPlan.features
-                    |> List.indexedMap (\i feature -> li [] [ viewOrEditText (Features (Just i)) ])
+                    |> List.indexedMap (\i feature -> li [] [ render.text (Features (Just i)) ])
                     |> ul [ class "list-unstyled mt-3 mb-4" ]
                 , Toolkit.viewComments state (Features Nothing)
                     |> Html.map (Toolkit.mapMsg (Just >> parentPath))
