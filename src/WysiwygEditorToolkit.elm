@@ -568,7 +568,7 @@ viewTextStatic definition path data =
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
 -}
 viewTextEditable : Definition path data -> State path -> path -> data -> Html (Msg path)
-viewTextEditable definition state path data =
+viewTextEditable definition (State state) path data =
     case getString definition path data of
         Nothing ->
             Html.text <|
@@ -581,9 +581,38 @@ viewTextEditable definition state path data =
                     ]
 
         Just text ->
+            let
+                pathString =
+                    state.pathToString path
+
+                isFocused =
+                    state.focusedCommentThread == Just pathString
+
+                isHovered =
+                    state.hoveredCommentThread == Just pathString
+
+                hasComments =
+                    Dict.get pathString state.comments
+                        |> Maybe.withDefault []
+                        |> (/=) []
+            in
             Html.Keyed.node "div"
                 [ style "position" "relative"
                 , style "display" "inline-block"
+                , if hasComments then
+                    style "box-shadow" "yellow 0px -4px 2px -2px inset"
+
+                  else
+                    style "" ""
+                , if isFocused || (hasComments && isHovered) then
+                    style "background-color" "yellow"
+
+                  else
+                    style "" ""
+                , onMouseEnter (HoverCommentThread (Just path))
+
+                -- TODO: we need to track the hover sources independently so there isn't a race condition on removing the current hover
+                , onMouseLeave (HoverCommentThread Nothing)
                 ]
                 [ ( "editable"
                   , Html.node "avh4-wysiwyg-editor-toolkit-text"
@@ -604,7 +633,7 @@ viewTextEditable definition state path data =
                         |> Html.map (Edit >> EditAction path >> EditActionMsg)
                   )
                 , ( "comments"
-                  , viewComments state path
+                  , viewComments (State state) path
                   )
                 ]
 
