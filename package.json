@@ -7,7 +7,7 @@
     "build": "elm make",
     "build-docs": "elm make --docs=documentation.json",
     "test": "elm-test && npm run-script build && npm run-script build-example && npm run-script build-docs && npm run-script check",
-    "snapshot-tests": "mocha --require co-mocha --slow 10s --timeout 200s snapshot-tests",
+    "snapshot-tests": "mocha --slow 10s --timeout 200s snapshot-tests",
     "build-example": "(cd example && elm make --output main.js src/Main.elm)",
     "check": "elm-format --validate .",
     "watch": "chokidar --initial elm.json 'src/**/*.elm' 'tests/**/*.elm' 'example/**/*.elm' -c 'npm test'",
@@ -18,14 +18,13 @@
   "license": "MIT",
   "devDependencies": {
     "chokidar-cli": "^1.2.2",
-    "co-mocha": "^1.2.2",
     "elm": "^0.19.0-bugfix6",
     "elm-format": "^0.8.1",
     "elm-test": "^0.19.0",
     "http-server": "^0.11.1",
     "mocha": "^6.0.2",
-    "niffy": "^0.2.0",
-    "nightmare": "^3.0.1",
-    "pshell": "^1.1.0"
+    "pshell": "^1.1.0",
+    "puppeteer": "^1.13.0",
+    "resemblejs": "^3.0.2"
   }
 }

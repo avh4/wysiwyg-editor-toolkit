@@ -1,10 +1,10 @@
-const Nightmare = require('nightmare');
-const Niffy = require('niffy');
-const assert = require('assert');
+const puppeteer = require('puppeteer');
 const httpServer = require('http-server');
 const path = require('path');
 const exec = require('pshell');
 const fs = require('fs');
+const compareImages = require("resemblejs/compareImages");
+
 
 const headServer = {
   port: '9395',
@@ -69,24 +69,64 @@ after(() => {
 });
 
 describe('Load a Page', function() {
-  let niffy = null;
+  let browser = null;
   let headHost = `http://localhost:${headServer.port}`;
   let masterHost = `http://localhost:${masterServer.port}`;
-  beforeEach(() => {
-    niffy = new Niffy(masterHost, headHost, { show: false });
+
+  before(async () => {
+    browser = await puppeteer.launch();
   });
 
-  afterEach(function* () {
-    yield niffy.end();
+  after(async () => {
+    await browser.close();
   });
 
-  it('Pricing demo (editable)', function* () {
-    yield niffy.test('/');
+  function escapeXpathString(str) {
+    const splitedQuotes = str.replace(/'/g, `', "'", '`);
+    return `concat('${splitedQuotes}', '')`;
+  }
+  async function clickButton(page, text) {
+    const escapedText = escapeXpathString(text);
+    const linkHandlers = await page.$x(`//button[contains(text(), ${escapedText})]`);
+    if (linkHandlers.length == 1) {
+      await linkHandlers[0].click();
+    } else if (linkHandlers.length > 1) {
+      throw new Error("Multiple buttons found");
+    } else {
+      throw new Error("Button not found");
+    }
+  }
+
+  async function test(name, actions) {
+    const page = await browser.newPage();
+    page.setViewport({width: 1400, height: 978});
+
+    await page.goto(headHost);
+    await actions(page);
+    image1 = await page.screenshot();
+
+    await page.goto(masterHost);
+    await actions(page);
+    image2 = await page.screenshot();
+
+    const result = await compareImages(image1, image2);
+
+    fs.writeFileSync(`./${name}.png`, result.getBuffer());
+
+    if (!result.isSameDimensions) {
+      throw new Error(`Image dimensions don't match: ${result}`);
+    } else if (result.rawMisMatchPercentage > 0.02) {
+      throw new Error(`Images don't match: ${JSON.stringify(result)}`);
+    }
+  }
+
+  it('Pricing demo (editable)', () => {
+    return test('Pricing demo (editable)', page => {});
   });
 
-  it('Pricing demo (static)', function* () {
-    yield niffy.test('/', function* (nightmare) {
-      yield nightmare.click('body > div:nth-child(3) > button:nth-child(1)');
+  it('Pricing demo (static)', () => {
+    return test('Pricing demo (static)', async page => {
+      await clickButton(page, 'Static');
     });
   });
 });
