@@ -671,7 +671,7 @@ viewComments (State state) path =
             state.hoveredCommentThread == Just pathString
     in
     if isFocused then
-        Html.div
+        Html.aside
             [ style "position" "absolute"
             , style "font-size" "10px"
             , style "background" "pink"
@@ -713,7 +713,7 @@ viewComments (State state) path =
         Html.text ""
 
     else
-        Html.div
+        Html.aside
             [ style "position" "absolute"
             , style "font-size" "10px"
             , style "background" <|

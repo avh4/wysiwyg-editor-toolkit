@@ -108,7 +108,7 @@ describe(`Comparing screenshots against ${referenceRef}`, function() {
     image1 = await page.screenshot();
 
     await page.goto(masterHost);
-    await actions(page);
+    await actions(page).catch(() => null);
     image2 = await page.screenshot();
 
     const result = await compareImages(image1, image2);
@@ -130,7 +130,14 @@ describe(`Comparing screenshots against ${referenceRef}`, function() {
   }
 
   it('Pricing demo (editable)', () => {
-    return test('Pricing demo (editable)', page => {});
+    return test('Pricing demo (editable)', async page => {});
+  });
+
+  it('Pricing demo (focused comments)', () => {
+    return test('Pricing demo (focused comments)', async page => {
+      const linkHandlers = await page.$x("//aside[contains(.,'Quest')]");
+      await linkHandlers[0].click();
+    });
   });
 
   it('Pricing demo (static)', () => {
