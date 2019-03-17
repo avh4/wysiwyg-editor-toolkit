@@ -80,7 +80,13 @@ describe('Load a Page', function() {
     yield niffy.end();
   });
 
-  it('Pricing demo', function* () {
+  it('Pricing demo (editable)', function* () {
     yield niffy.test('/');
+  });
+
+  it('Pricing demo (static)', function* () {
+    yield niffy.test('/', function* (nightmare) {
+      yield nightmare.click('body > div:nth-child(3) > button:nth-child(1)');
+    });
   });
 });
