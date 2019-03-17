@@ -5,7 +5,7 @@ class AvhWysiwygEditorToolkitTextElement extends HTMLElement {
     var shadow = this.attachShadow({mode: 'closed'});
 
     this.mainDiv = document.createElement('div');
-    this.mainDiv.style.display = 'inline'; // NOTE: I'm not sure why making a div with display:inline works, but making a span makes it so that typing doesn't work when there's a cursor selection
+    this.mainDiv.style.display = 'inline-block';
     this.mainDiv.setAttribute('contenteditable', 'true');
     this.mainDiv.innerText = this.getAttribute('content');
 

@@ -563,10 +563,11 @@ viewTextStatic definition path data =
 
         Just text ->
             -- NOTE: the keyed span is here to work around an elm/virtual-dom bug which causes a crash when it tries to remove contenteditable from a node that already has it set -- so we use a keyed node to ensure that we create a new DOM node instead of reusing an existing contenteditable DOM node
-            Html.Keyed.node "span"
-                []
+            Html.Keyed.node "div"
+                [ style "display" "inline-block"
+                ]
                 [ ( "static"
-                  , Html.span [] [ Html.text text ]
+                  , Html.text text
                   )
                 ]
 
@@ -587,8 +588,9 @@ viewTextEditable definition state path data =
                     ]
 
         Just text ->
-            Html.Keyed.node "span"
+            Html.Keyed.node "div"
                 [ style "position" "relative"
+                , style "display" "inline-block"
                 ]
                 [ ( "editable"
                   , Html.node "avh4-wysiwyg-editor-toolkit-text"
