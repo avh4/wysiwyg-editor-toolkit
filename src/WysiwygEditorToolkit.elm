@@ -562,14 +562,7 @@ viewTextStatic definition path data =
                     ]
 
         Just text ->
-            -- NOTE: the keyed span is here to work around an elm/virtual-dom bug which causes a crash when it tries to remove contenteditable from a node that already has it set -- so we use a keyed node to ensure that we create a new DOM node instead of reusing an existing contenteditable DOM node
-            Html.Keyed.node "div"
-                [ style "display" "inline-block"
-                ]
-                [ ( "static"
-                  , Html.text text
-                  )
-                ]
+            Html.text text
 
 
 {-| This is the editable version of [`viewTextStatic`](#viewTextStatic).
