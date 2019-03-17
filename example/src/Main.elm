@@ -278,10 +278,8 @@ pricingSummaryView render renderingMode summary =
     in
     div []
         [ div [ class "pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center" ]
-            [ h1 [ class "display-4" ] [ render.text Title ]
-            , p [ class "lead" ]
-                [ render.text Intro
-                ]
+            [ render.textBlock Title (h1 [ class "display-4" ])
+            , render.textBlock Intro (p [ class "lead" ])
             ]
         , div [ class "container" ]
             [ summary.plans
@@ -310,7 +308,7 @@ viewPricingPlanCard render pricingPlan =
     render.withDelete Nothing
         (div [ class "card mb-4 shadow-sm" ])
         [ div [ class "card-header" ]
-            [ h4 [ class "my-0 font-weight-normal" ] [ render.text (Just Name) ]
+            [ render.textBlock (Just Name) (h4 [ class "my-0 font-weight-normal" ])
             ]
         , div [ class "card-body" ]
             [ h1 [ class "card-title pricing-card-title" ]
@@ -323,7 +321,7 @@ viewPricingPlanCard render pricingPlan =
                 [ style "position" "relative"
                 ]
                 [ pricingPlan.features
-                    |> List.indexedMap (\i feature -> li [] [ render.text (Just (Features (Just i))) ])
+                    |> List.indexedMap (\i feature -> render.textBlock (Just (Features (Just i))) (li []))
                     |> ul [ class "list-unstyled mt-3 mb-4" ]
                 , render.comments (Just (Features Nothing))
                 ]
