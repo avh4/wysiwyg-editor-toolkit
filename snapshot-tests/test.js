@@ -111,7 +111,14 @@ describe('Load a Page', function() {
 
     const result = await compareImages(image1, image2);
 
-    fs.writeFileSync(`./${name}.png`, result.getBuffer());
+    const filename = `./${name}.png`;
+    if (result.rawMisMatchPercentage == 0) {
+      if (fs.existsSync(filename)) {
+        fs.unlinkSync(filename);
+      }
+    } else {
+      fs.writeFileSync(filename, result.getBuffer());
+    }
 
     if (!result.isSameDimensions) {
       throw new Error(`Image dimensions don't match: ${result}`);
