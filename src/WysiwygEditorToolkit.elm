@@ -632,6 +632,29 @@ viewTextEditable definition (State state) path data =
                         ]
                         |> Html.map (Edit >> EditAction path >> EditActionMsg)
                   )
+                , ( "add-comments"
+                  , if hasComments || isFocused then
+                        Html.text ""
+
+                    else
+                        Html.button
+                            [ style "position" "absolute"
+                            , style "width" "50px"
+                            , style "height" "100%"
+                            , style "max-height" "50px"
+                            , style "font-size" "10px"
+                            , style "padding" "0"
+                            , style "border" "1px dashed gray"
+                            , style "border-radius" "5px"
+                            , if isHovered then
+                                style "" ""
+
+                              else
+                                style "display" "none"
+                            , onClick (FocusComment path)
+                            ]
+                            [ Html.text "Comment" ]
+                  )
                 , ( "comments"
                   , viewComments (State state) path
                   )
