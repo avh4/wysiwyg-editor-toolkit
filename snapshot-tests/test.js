@@ -5,6 +5,8 @@ const exec = require('pshell');
 const fs = require('fs');
 const compareImages = require("resemblejs/compareImages");
 
+const referenceRef = process.env.COMPARE_WITH || "origin/master";
+
 
 const headServer = {
   port: '9395',
@@ -49,7 +51,7 @@ function cloneMaster() {
 function checkoutMaster() {
   return exec("git fetch", { cwd: masterServer.root})
     .then(() => exec("git reset --hard", { cwd: masterServer.root}))
-    .then(() => exec("git checkout origin/master", { cwd: masterServer.root}));
+    .then(() => exec(`git checkout ${referenceRef}`, { cwd: masterServer.root}));
 }
 
 before(() => {
@@ -68,7 +70,7 @@ after(() => {
   servers.forEach(s => s.close());
 });
 
-describe('Load a Page', function() {
+describe(`Comparing screenshots against ${referenceRef}`, function() {
   let browser = null;
   let headHost = `http://localhost:${headServer.port}`;
   let masterHost = `http://localhost:${masterServer.port}`;
