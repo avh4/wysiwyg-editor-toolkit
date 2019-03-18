@@ -56,7 +56,7 @@ function checkoutMaster() {
 
 before(() => {
   const buildMaster =
-    cloneMaster().then(() => checkoutMaster()).then(() => build(masterServer));
+    cloneMaster().then(checkoutMaster).then(() => build(masterServer));
 
   return Promise.all([
     build(headServer),
